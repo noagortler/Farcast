@@ -1,4 +1,4 @@
-# Farcast — Project Planning Documentation
+# Farcast - Project Planning Documentation
 
 ---
 

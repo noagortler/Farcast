@@ -1,4 +1,4 @@
-# Farcast — Style Guide
+# Farcast - Style Guide
 
 This document defines the colours, fonts, spacing, and component styles used in Farcast.
 

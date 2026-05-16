@@ -20,7 +20,6 @@ Built for cyclists, hikers, runners, and paddlers.
 ## Tech stack
 
 - React (Vite)
-- React Router
 - Material UI + MUI Icons
 - OpenWeather API (free tier)
 - localStorage for data persistence
@@ -32,7 +31,7 @@ Built for cyclists, hikers, runners, and paddlers.
 **1. Clone the repo**
 
 ```bash
-git clone https://github.com/noagortler/farcast.git
+git clone https://github.com/noagortler/Farcast.git
 cd farcast
 ```
 
