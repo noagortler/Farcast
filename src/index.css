@@ -1,10 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
 
+/* --- Reset --- */
+
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
+
+/* --- CSS Variables --- */
 
 :root {
   --bg: #F2EFE7;
@@ -34,6 +38,8 @@
   --s6: 48px;
 }
 
+/* --- Base --- */
+
 html, body {
   display: flex;
   justify-content: center;
@@ -57,7 +63,10 @@ button {
   background: none;
 }
 
-/* Welcome screen — mobile */
+/* *** Welcome Screen *** */
+
+/* Mobile */
+
 .welcome {
   display: flex;
   flex-direction: column;
@@ -66,17 +75,6 @@ button {
   padding: var(--s2);
   gap: var(--s3);
   min-height: 100vh;
-}
-
-.welcome-cards {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s3);
-  width: 100%;
-}
-
-.welcome-body {
-  margin-bottom: var(--s2);
 }
 
 .wordmark {
@@ -106,6 +104,10 @@ button {
   margin-bottom: var(--s1);
 }
 
+.welcome-body {
+  margin-bottom: var(--s2);
+}
+
 .welcome-description {
   font-size: 14px;
   color: var(--text-muted);
@@ -118,21 +120,15 @@ button {
   font-weight: 550;
 }
 
-.btn-primary {
+/* Cards */
+
+.welcome-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
   width: 100%;
-  max-width: 480px;
-  padding: var(--s2);
-  background-color: var(--dark-navy);
-  color: var(--white);
-  font-size: 16px;
-  font-weight: 600;
-  border-radius: 12px;
-  min-height: var(--s6);
-  margin-top: auto;
-  font-family: 'DM Sans', sans-serif;
 }
 
-/* Cards */
 .welcome-card {
   width: 100%;
   border-radius: 16px;
@@ -151,28 +147,8 @@ button {
   margin-bottom: var(--s2);
 }
 
-/* Activity grid */
-.activity-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--s2);
-}
-
-.activity-item {
-  background: rgba(255, 255, 255, 0.45);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: var(--s2) var(--s1);
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--dark-navy);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--s1);
-}
-
 /* Steps */
+
 .steps {
   display: flex;
   flex-direction: column;
@@ -227,7 +203,46 @@ button {
   line-height: 1.5;
 }
 
+/* Activity Grid */
+
+.activity-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--s2);
+}
+
+.activity-item {
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: var(--s2) var(--s1);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dark-navy);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+}
+
+/* Button */
+
+.btn-primary {
+  width: 100%;
+  max-width: 480px;
+  padding: var(--s2);
+  background-color: var(--dark-navy);
+  color: var(--white);
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+  min-height: var(--s6);
+  margin-top: auto;
+  font-family: 'DM Sans', sans-serif;
+}
+
 /* Medium Screens */
+
 @media (min-width: 768px) {
   .welcome {
     display: grid;
@@ -264,13 +279,13 @@ button {
     font-size: 28px;
   }
 
-  .welcome-description {
-    font-size: 16px;
-  }
-
   .welcome-body {
     margin-top: var(--s6);
     margin-bottom: 0;
+  }
+
+  .welcome-description {
+    font-size: 16px;
   }
 
   .welcome-cards {
@@ -281,21 +296,24 @@ button {
     width: auto;
   }
 
-  .btn-primary {
-    grid-column: 1;
-    grid-row: 2;
-    max-width: 280px;
-    margin-top: 0;
-    margin-bottom: var(--s3);
-    align-self: start;
-  }
-
   .welcome-card {
     padding: var(--s3);
   }
 
   .card-label {
     font-size: 14px;
+  }
+
+  .steps {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--s2);
+  }
+
+  .step {
+    flex-direction: column;
+    border-radius: 16px;
+    padding: var(--s2);
   }
 
   .step-number {
@@ -312,20 +330,18 @@ button {
     font-size: 14px;
   }
 
-  .steps {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: var(--s2);
-  }
-
-  .step {
-    flex-direction: column;
-    border-radius: 16px;
-    padding: var(--s2);
+  .btn-primary {
+    grid-column: 1;
+    grid-row: 2;
+    max-width: 280px;
+    margin-top: 0;
+    margin-bottom: var(--s3);
+    align-self: start;
   }
 }
 
 /* Large Screens */
+
 @media (min-width: 943px) {
   .welcome {
     gap: 60px;
@@ -352,15 +368,15 @@ button {
     max-width: 600px;
   }
 
+  .card-label {
+    font-size: 16px;
+  }
+
   .step-content h3 {
     font-size: 17px;
   }
 
   .step-content p {
     font-size: 15px;
-  }
-
-  .card-label {
-    font-size: 16px;
   }
 }
