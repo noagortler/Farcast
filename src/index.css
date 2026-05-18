@@ -9,12 +9,9 @@
 :root {
   --bg: #F2EFE7;
   --card-dark: #E6E2D6;
-  --card-light: #ECE8DC;
   --dark-navy: #1F2D3F;
   --green: #80B894;
-  --green-dark: #5E9D77;
   --text-muted: #2C3A4E;
-  --text-light: #6B7280;
   --white: #ffffff;
   --border: rgba(31, 45, 63, 0.12);
   --step-blue: #C0CCD9;
@@ -66,16 +63,26 @@ button {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: var(--s3);
-  gap: var(--s4);
+  padding: var(--s2);
+  gap: var(--s3);
   min-height: 100vh;
+}
+
+.welcome-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  width: 100%;
+}
+
+.welcome-body {
+  margin-bottom: var(--s2);
 }
 
 .wordmark {
   font-family: 'Sora', sans-serif;
-  font-size: 48px;
-  letter-spacing: 6px;
-  margin-bottom: var(--s1);
+  font-size: 36px;
+  letter-spacing: 4px;
 }
 
 .far {
@@ -88,18 +95,19 @@ button {
 
 .tagline {
   color: var(--text-muted);
-  font-size: 16px;
+  font-size: 14px;
+  margin-bottom: var(--s4);
 }
 
 .welcome-heading {
   font-family: 'Sora', sans-serif;
-  font-size: 28px;
+  font-size: 18px;
   font-weight: 700;
-  margin-bottom: var(--s2);
+  margin-bottom: var(--s1);
 }
 
 .welcome-description {
-  font-size: 16px;
+  font-size: 14px;
   color: var(--text-muted);
   line-height: 1.6;
   max-width: 480px;
@@ -116,7 +124,7 @@ button {
   padding: var(--s2);
   background-color: var(--dark-navy);
   color: var(--white);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   border-radius: 12px;
   min-height: var(--s6);
@@ -128,7 +136,7 @@ button {
 .welcome-card {
   width: 100%;
   border-radius: 16px;
-  padding: var(--s3);
+  padding: var(--s2);
   text-align: left;
 }
 
@@ -136,12 +144,8 @@ button {
   background-color: var(--card-dark);
 }
 
-.welcome-card-light {
-  background-color: var(--card-light);
-}
-
 .card-label {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-muted);
   font-weight: 600;
   margin-bottom: var(--s2);
@@ -155,7 +159,7 @@ button {
 }
 
 .activity-item {
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.45);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: var(--s2) var(--s1);
@@ -172,30 +176,26 @@ button {
 .steps {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: var(--s2);
 }
 
 .step {
   display: flex;
   align-items: flex-start;
   gap: var(--s2);
-  padding: var(--s2) 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.step:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+  padding: var(--s2);
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 12px;
 }
 
 .step-number {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   flex-shrink: 0;
 }
@@ -216,13 +216,13 @@ button {
 }
 
 .step-content h3 {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   margin-bottom: 4px;
 }
 
 .step-content p {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-muted);
   line-height: 1.5;
 }
@@ -251,17 +251,34 @@ button {
     padding-top: 100px;
   }
 
+  .wordmark {
+    font-size: 52px;
+  }
+
+  .tagline {
+    font-size: 16px;
+    margin-bottom: 0;
+  }
+
+  .welcome-heading {
+    font-size: 28px;
+  }
+
+  .welcome-description {
+    font-size: 16px;
+  }
+
   .welcome-body {
     margin-top: var(--s6);
+    margin-bottom: 0;
   }
 
   .welcome-cards {
     grid-column: 2;
     grid-row: 1 / 3;
-    display: flex;
-    flex-direction: column;
     gap: var(--s3);
     align-self: center;
+    width: auto;
   }
 
   .btn-primary {
@@ -273,6 +290,28 @@ button {
     align-self: start;
   }
 
+  .welcome-card {
+    padding: var(--s3);
+  }
+
+  .card-label {
+    font-size: 14px;
+  }
+
+  .step-number {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  .step-content h3 {
+    font-size: 16px;
+  }
+
+  .step-content p {
+    font-size: 14px;
+  }
+
   .steps {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
@@ -281,8 +320,6 @@ button {
 
   .step {
     flex-direction: column;
-    border-bottom: none;
-    background: rgba(255, 255, 255, 0.35);
     border-radius: 16px;
     padding: var(--s2);
   }
@@ -303,6 +340,7 @@ button {
 
   .tagline {
     font-size: 20px;
+    margin-bottom: 0;
   }
 
   .welcome-heading {

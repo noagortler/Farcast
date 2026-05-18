@@ -52,7 +52,7 @@ function Welcome({ setPage }) {
                     </div>
                 </div>
 
-                <div className="welcome-card welcome-card-light">
+                <div className="welcome-card welcome-card-dark">
                     <p className="card-label">Built for four activities</p>
 
                     <div className="activity-grid">
