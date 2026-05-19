@@ -8,7 +8,9 @@ import { WeatherProvider } from './context/WeatherContext'
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <PreferencesProvider>
+      <WeatherProvider>
         <App />
+      </WeatherProvider>
     </PreferencesProvider>
   </StrictMode>
 )
