@@ -29,6 +29,7 @@ const ACTIVITIES = [
 function Onboarding({ setPage }) {
   const [selectedLocation, setSelectedLocation] = useState(null)
   const [selectedActivity, setSelectedActivity] = useState(null)
+  const [error, setError] = useState(false)
 
   function handleLocationChange(e) {
     const index = e.target.value
@@ -37,10 +38,14 @@ function Onboarding({ setPage }) {
     } else {
       setSelectedLocation(LOCATIONS[index])
     }
+    setError(false)
   }
 
   function handleStart() {
-    if (!selectedLocation || !selectedActivity) return
+    if (!selectedLocation || !selectedActivity) {
+      setError(true)
+      return
+    }
     localStorage.setItem('farcast_location', JSON.stringify(selectedLocation))
     localStorage.setItem('farcast_active_activity', selectedActivity)
     setPage('home')
@@ -53,7 +58,7 @@ function Onboarding({ setPage }) {
         <h1 className="wordmark"><span className="far">FAR</span><span className="cast">CAST</span></h1>
       </div>
 
-      <p className="onboarding-instructions">Two quick questions and you're set.</p>
+      <p className="onboarding-instructions">Let's get you set up.</p>
 
       <div className="onboarding-cards">
 
@@ -87,7 +92,10 @@ function Onboarding({ setPage }) {
               <button
                 key={activity.id}
                 className={`activity-item ${selectedActivity === activity.id ? 'activity-item-active' : ''}`}
-                onClick={() => setSelectedActivity(activity.id)}
+                onClick={() => {
+                  setSelectedActivity(activity.id)
+                  setError(false)
+                }}
               >
                 {activity.icon}
                 <span>{activity.label}</span>
@@ -100,10 +108,15 @@ function Onboarding({ setPage }) {
 
       <p className="onboarding-note">You can fine-tune sensitivity for each activity later in Settings.</p>
 
+      {error && (
+        <p className="onboarding-error">
+          Please select both a location and an activity to continue.
+        </p>
+      )}
+
       <button
         className="btn-primary"
         onClick={handleStart}
-        disabled={!selectedLocation || !selectedActivity}
       >
         Start using Farcast
       </button>

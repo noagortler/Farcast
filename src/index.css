@@ -40,7 +40,8 @@
 
 /* --- Base --- */
 
-html, body {
+html,
+body {
   display: flex;
   justify-content: center;
   height: 100%;
@@ -208,7 +209,8 @@ button {
 .activity-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: var(--s2);
+  gap: var(--s1);
+  align-items: stretch;
 }
 
 .activity-item {
@@ -223,6 +225,11 @@ button {
   flex-direction: column;
   align-items: center;
   gap: var(--s1);
+  width: 100%;
+  height: 100%;
+  align-self: stretch;
+  overflow: hidden;
+  min-width: 0;
 }
 
 /* Button */
@@ -263,7 +270,7 @@ button {
     align-items: flex-start;
     justify-content: space-between;
     gap: 0;
-    padding-top: 100px;
+    padding-top: 8vh;
   }
 
   .wordmark {
@@ -378,5 +385,157 @@ button {
 
   .step-content p {
     font-size: 15px;
+  }
+}
+
+/* *** Onboarding Screen *** */
+
+/* Mobile */
+
+.onboarding {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--s2);
+  gap: var(--s3);
+  min-height: 100vh;
+}
+
+.onboarding-header .wordmark {
+  font-size: 36px;
+}
+
+.onboarding-instructions {
+  font-size: 18px;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-top: var(--s2);
+}
+
+.onboarding-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  width: 100%;
+}
+
+.onboarding-card {
+  width: 100%;
+  border-radius: 16px;
+  padding: var(--s3);
+  text-align: left;
+}
+
+.onboarding-card-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-bottom: var(--s3);
+}
+
+.onboarding-card-heading h2 {
+  font-family: 'Sora', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* Location select */
+
+.location-select {
+  width: 100%;
+  padding: var(--s2);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.45);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  color: var(--dark-navy);
+  cursor: pointer;
+  margin-bottom: var(--s2);
+}
+
+.location-helper {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* Activity grid active state */
+
+.activity-item-active {
+  background: var(--dark-navy);
+  color: var(--white);
+  border-color: var(--dark-navy);
+}
+
+.activity-item-active svg {
+  color: var(--white);
+}
+
+/* Note and button */
+
+.onboarding-note {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* Error */
+
+.onboarding-error {
+  font-size: 14px;
+  color: var(--score-avoid);
+}
+
+/* Medium Screens */
+
+@media (min-width: 768px) {
+  .onboarding-header .wordmark {
+    font-size: 56px;
+  }
+
+  .onboarding-cards {
+    max-width: 600px;
+  }
+
+  .onboarding .btn-primary {
+    align-self: center;
+    grid-column: unset;
+    grid-row: unset;
+    max-width: 380px;
+    margin-bottom: 0;
+  }
+}
+
+/* Large Screens */
+
+@media (min-width: 943px) {
+  .onboarding {
+    justify-content: flex-start;
+    padding: 4vh 96px;
+    gap: var(--s4);
+  }
+
+  .onboarding-header {
+    margin-bottom: 8vh;
+  }
+
+  .onboarding-instructions {
+    font-size: 20px;
+  }
+
+  .onboarding-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s4);
+    max-width: 1200px;
+    width: 100%;
+  }
+
+  .onboarding-card-heading h2 {
+    font-size: 22px;
+  }
+
+  .onboarding-note {
+    font-size: 16px;
   }
 }
