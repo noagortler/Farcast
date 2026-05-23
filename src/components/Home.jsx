@@ -7,6 +7,7 @@ import DirectionsBikeIcon from '@mui/icons-material/DirectionsBike'
 import HikingIcon from '@mui/icons-material/Hiking'
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun'
 import KayakingIcon from '@mui/icons-material/Kayaking'
+import ScoreGauge from './ScoreGauge'
 
 const ACTIVITIES = [
   { id: 'cycling', label: 'CYCLING', icon: <DirectionsBikeIcon style={{ fontSize: 28 }} /> },
@@ -67,7 +68,7 @@ function Home({ setPage }) {
       </nav>
 
       <div className="home-body">
-        <p>Home screen content</p>
+        <ScoreGauge score={81} />
       </div>
 
     </div>

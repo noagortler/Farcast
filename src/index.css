@@ -646,6 +646,57 @@ button {
   padding: var(--s3);
 }
 
+/* Home Screen Content */
+
+/* Score Gauge */
+
+.score-gauge {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+  position: relative;
+}
+
+.score-gauge-hole {
+  width: 130px;
+  height: 130px;
+  background: var(--bg);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.score-number {
+  font-family: 'Sora', sans-serif;
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--dark-navy);
+  line-height: 1;
+}
+
+.score-out-of {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.score-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  margin-top: 4px;
+  border: 1px solid currentColor;
+  border-radius: 20px;
+  padding: 2px 10px;
+}
+
 /* Large Screens */
 
 @media (min-width: 943px) {
