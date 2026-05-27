@@ -894,6 +894,138 @@ button {
   flex-shrink: 0;
 }
 
+/* Today's Forecast */
+
+.forecast-card {
+  border-radius: 16px;
+  padding: var(--s3);
+  margin-top: var(--s3);
+}
+
+.forecast-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--dark-navy);
+  margin-bottom: var(--s2);
+}
+
+.forecast-scroll {
+  display: flex;
+  gap: var(--s2);
+  overflow-x: auto;
+  padding-bottom: var(--s1);
+}
+
+.forecast-scroll::-webkit-scrollbar {
+  height: 4px;
+}
+
+.forecast-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.forecast-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.forecast-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--s2) var(--s1);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.45);
+  min-width: 64px;
+  flex-shrink: 0;
+}
+
+.forecast-time {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.forecast-temp {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--dark-navy);
+}
+
+.forecast-score {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* 5-day Outlook */
+
+.outlook-card {
+  border-radius: 16px;
+  padding: var(--s3);
+  margin-top: var(--s3);
+  margin-bottom: var(--s3);
+}
+
+.outlook-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--dark-navy);
+  margin-bottom: var(--s3);
+}
+
+.outlook-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+
+.outlook-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.outlook-day {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dark-navy);
+  width: 40px;
+  flex-shrink: 0;
+}
+
+.outlook-low {
+  font-size: 13px;
+  color: var(--text-muted);
+  width: 30px;
+  flex-shrink: 0;
+}
+
+.outlook-bar-track {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.45);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.outlook-high {
+  font-size: 13px;
+  color: var(--dark-navy);
+  width: 30px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.outlook-score {
+  font-size: 14px;
+  font-weight: 700;
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
 /* Large Screens */
 
 @media (min-width: 943px) {

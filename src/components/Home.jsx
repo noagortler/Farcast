@@ -1,13 +1,25 @@
+// React
+import { useEffect } from 'react'
+
+// Context
 import { usePreferences } from '../context/PreferencesContext'
 import { useWeather } from '../context/WeatherContext'
+
+// Components
+import ScoreGauge from './ScoreGauge'
+
+// Navigation icons
 import SettingsIcon from '@mui/icons-material/Settings'
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
+
+// Activity icons
 import DirectionsBikeIcon from '@mui/icons-material/DirectionsBike'
 import HikingIcon from '@mui/icons-material/Hiking'
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun'
 import KayakingIcon from '@mui/icons-material/Kayaking'
-import ScoreGauge from './ScoreGauge'
+
+// Weather icons
 import WbCloudyIcon from '@mui/icons-material/WbCloudy'
 import AirIcon from '@mui/icons-material/Air'
 import WaterDropIcon from '@mui/icons-material/WaterDrop'
@@ -21,6 +33,46 @@ const ACTIVITIES = [
   { id: 'running', label: 'RUNNING', icon: <DirectionsRunIcon style={{ fontSize: 28 }} /> },
   { id: 'paddling', label: 'PADDLING', icon: <KayakingIcon style={{ fontSize: 28 }} /> },
 ]
+
+const OUTLOOK_DATA = [
+  { day: 'Today', low: 2,  high: 12, score: 91 },
+  { day: 'Wed',   low: 6,  high: 14, score: 82 },
+  { day: 'Thu',   low: 5,  high: 13, score: 58 },
+  { day: 'Fri',   low: 3,  high: 9,  score: 44 },
+  { day: 'Sat',   low: 2,  high: 7,  score: 19 },
+]
+
+const FORECAST_DATA = [
+  { time: 'Now',  temp: '2°',  score: 81 },
+  { time: '9am',  temp: '4°',  score: 85 },
+  { time: '12pm', temp: '11°', score: 90 },
+  { time: '3pm',  temp: '12°', score: 91 },
+  { time: '6pm',  temp: '8°',  score: 85 },
+]
+
+function getScoreColor(score) {
+  if (score >= 90) return 'var(--score-optimal)'
+  if (score >= 70) return 'var(--score-good)'
+  if (score >= 45) return 'var(--score-fair)'
+  if (score >= 20) return 'var(--score-poor)'
+  return 'var(--score-avoid)'
+}
+
+function getOutlookBarStyle(low, high, allData) {
+  const minTemp = Math.min(...allData.map(d => d.low)) - 2
+  const maxTemp = Math.max(...allData.map(d => d.high)) + 2
+  const range = maxTemp - minTemp
+  const leftPercent = ((low - minTemp) / range) * 100
+  const widthPercent = ((high - low) / range) * 100
+
+  return {
+    marginLeft: `${leftPercent}%`,
+    width: `${widthPercent}%`,
+    background: 'linear-gradient(to right, #7EB8D4, #E8C870, #E89080)',
+    height: '100%',
+    borderRadius: '3px',
+  }
+}
 
 function Home({ setPage }) {
   const { location, activity, setActivity } = usePreferences()
@@ -74,6 +126,7 @@ function Home({ setPage }) {
       </nav>
 
       <div className="home-body">
+
         <ScoreGauge score={81} />
 
         <div className="best-window-card welcome-card-dark">
@@ -156,6 +209,42 @@ function Home({ setPage }) {
               </div>
               <span className="score-bar-value">8%</span>
             </div>
+          </div>
+        </div>
+
+        <div className="forecast-card welcome-card-dark">
+          <p className="forecast-title">Today's forecast</p>
+          <div className="forecast-scroll">
+            {FORECAST_DATA.map((item) => (
+              <div key={item.time} className="forecast-item">
+                <span className="forecast-time">{item.time}</span>
+                <WbCloudyIcon style={{ fontSize: 24, color: 'var(--text-muted)' }} />
+                <span className="forecast-temp">{item.temp}</span>
+                <span className="forecast-score" style={{ color: getScoreColor(item.score) }}>
+                  {item.score}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="outlook-card welcome-card-dark">
+          <p className="outlook-title">5-day outlook</p>
+          <div className="outlook-list">
+            {OUTLOOK_DATA.map((item) => (
+              <div key={item.day} className="outlook-row">
+                <span className="outlook-day">{item.day}</span>
+                <WbCloudyIcon style={{ fontSize: 20, color: 'var(--text-muted)' }} />
+                <span className="outlook-low">{item.low}°</span>
+                <div className="outlook-bar-track">
+                  <div style={getOutlookBarStyle(item.low, item.high, OUTLOOK_DATA)} />
+                </div>
+                <span className="outlook-high">{item.high}°</span>
+                <span className="outlook-score" style={{ color: getScoreColor(item.score) }}>
+                  {item.score}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
 
