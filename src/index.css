@@ -40,11 +40,14 @@
 
 /* --- Base --- */
 
-html,
+html {
+  height: 100%;
+}
+
 body {
+  height: 100%;
   display: flex;
   justify-content: center;
-  height: 100%;
   font-family: 'DM Sans', sans-serif;
   background-color: var(--bg);
   color: var(--dark-navy);
@@ -53,8 +56,9 @@ body {
 
 #root {
   height: 100%;
-  min-height: 100vh;
   width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 button {
@@ -544,8 +548,6 @@ button {
 
 /* Mobile */
 
-/* Navbar */
-
 .home {
   display: flex;
   flex-direction: column;
@@ -1026,9 +1028,23 @@ button {
   flex-shrink: 0;
 }
 
+/* Med Screens */
+
+@media (min-width: 768px) and (max-width: 942px) {
+  .home-body {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: var(--s3);
+  }
+}
+
 /* Large Screens */
 
 @media (min-width: 943px) {
+  .home {
+    min-height: unset;
+  }
+
   .home-nav {
     flex-direction: row;
     align-items: center;
@@ -1075,5 +1091,48 @@ button {
     display: flex;
     align-items: center;
     gap: var(--s1);
+  }
+
+  .home-body {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr 1fr;
+    gap: var(--s3);
+    padding: var(--s4);
+    max-width: 1366px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .home-col-left,
+  .home-col-center,
+  .home-col-right {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s3);
+  }
+
+  .score-gauge {
+    width: 220px;
+    height: 220px;
+    margin: 0 auto;
+  }
+
+  .score-gauge-hole {
+    width: 180px;
+    height: 180px;
+  }
+
+  .score-number {
+    font-size: 72px;
+  }
+
+  .best-window-card,
+  .conditions-card,
+  .sunrise-sunset-card,
+  .score-bars-card,
+  .forecast-card,
+  .outlook-card {
+    margin-top: 0;
+    margin-bottom: 0;
   }
 }
