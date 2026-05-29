@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePreferences } from '../context/PreferencesContext'
 import DirectionsBikeIcon from '@mui/icons-material/DirectionsBike'
 import HikingIcon from '@mui/icons-material/Hiking'
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun'
@@ -27,6 +28,7 @@ const ACTIVITIES = [
 ]
 
 function Onboarding({ setPage }) {
+  const { setLocation, setActivity } = usePreferences()
   const [selectedLocation, setSelectedLocation] = useState(null)
   const [selectedActivity, setSelectedActivity] = useState(null)
   const [error, setError] = useState(false)
@@ -46,8 +48,8 @@ function Onboarding({ setPage }) {
       setError(true)
       return
     }
-    localStorage.setItem('farcast_location', JSON.stringify(selectedLocation))
-    localStorage.setItem('farcast_active_activity', selectedActivity)
+    setLocation(selectedLocation)
+    setActivity(selectedActivity)
     setPage('home')
   }
 
