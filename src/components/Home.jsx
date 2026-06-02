@@ -50,23 +50,30 @@ function getScoreColor(score) {
 }
 
 function getWeatherIcon(weatherCode, size = 40) {
-  // OpenWeather condition codes: https://openweathermap.org/weather-conditions
+  // OpenWeather uses numeric codes for weather conditions
+  // Full list here: https://openweathermap.org/weather-conditions
   if (weatherCode >= 200 && weatherCode < 300) return <ThunderstormIcon style={{ fontSize: size, color: 'var(--dark-navy)' }} />
   if (weatherCode >= 300 && weatherCode < 600) return <GrainIcon style={{ fontSize: size, color: 'var(--dark-navy)' }} />
   if (weatherCode >= 600 && weatherCode < 700) return <AcUnitIcon style={{ fontSize: size, color: 'var(--dark-navy)' }} />
   if (weatherCode >= 700 && weatherCode < 800) return <DehazeIcon style={{ fontSize: size, color: 'var(--dark-navy)' }} />
   if (weatherCode === 800) return <WbSunnyIcon style={{ fontSize: size, color: '#E8C870' }} />
+  // Anything else is some kind of cloud
   return <WbCloudyIcon style={{ fontSize: size, color: 'var(--dark-navy)' }} />
 }
 
 function getOutlookBarStyle(low, high, allData) {
-  // Find the coldest low and hottest high across all days, pad by 2° on each side
-  // This makes the bars fill the full width relative to the week's temperature range
+  // Find the lowest and highest temps across all days
+  // The ...spread turns the array into individual values so Math.min can compare them
   const minTemp = Math.min(...allData.map(d => d.low)) - 2
   const maxTemp = Math.max(...allData.map(d => d.high)) + 2
   const range = maxTemp - minTemp
+
+  // leftPercent = how far from the left edge the bar starts
+  // widthPercent = how wide the bar is
+  // Together they position each bar relative to the full week temperature range
   const leftPercent = ((low - minTemp) / range) * 100
   const widthPercent = ((high - low) / range) * 100
+
   return {
     marginLeft: `${leftPercent}%`,
     width: `${widthPercent}%`,
@@ -77,16 +84,17 @@ function getOutlookBarStyle(low, high, allData) {
 }
 
 function formatTime(unixTimestamp, timezoneOffset) {
-  // OpenWeather returns UTC timestamps — we add the location's timezone offset
-  // to convert to local time before formatting
+  // OpenWeather gives us UTC timestamps
+  // We add the timezone offset to get the local time for that location
   const utcMs = unixTimestamp * 1000
   const localMs = utcMs + timezoneOffset * 1000
   const date = new Date(localMs)
   const hours = date.getUTCHours()
   const minutes = date.getUTCMinutes()
   const ampm = hours >= 12 ? 'pm' : 'am'
+  // hours % 12 converts to 12-hour format, the || 12 handles midnight and noon (which would be 0)
   const displayHours = hours % 12 || 12
-  // Only show minutes if they're not zero
+  // Only show minutes if they are not zero
   if (minutes === 0) return `${displayHours} ${ampm}`
   return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`
 }
@@ -101,7 +109,7 @@ function getDayName(unixTimestamp) {
 function getScoreForItem(temp, windSpeed, rainChance, activity, sensitivity) {
   // Multiply by 3.6 to convert metres per second to km/h
   const wind = windSpeed * 3.6
-  // rainChance from OpenWeather is 0–1, multiply by 100 to get a percentage
+  // rainChance from OpenWeather is 0 to 1, multiply by 100 to get a percentage
   const rain = rainChance * 100
   const activitySensitivity = sensitivity[activity] || { temperature: 3, wind: 3, rain: 3 }
   return calculateScore(temp, wind, rain, activity, activitySensitivity)
@@ -110,7 +118,11 @@ function getScoreForItem(temp, windSpeed, rainChance, activity, sensitivity) {
 function buildTodayForecast(forecastList, activity, sensitivity, timezoneOffset) {
   // Divide by 1000 because JS uses milliseconds but OpenWeather uses seconds
   const now = Date.now() / 1000
+
+  // Only show intervals from now onwards
   const upcoming = forecastList.filter(item => item.dt >= now)
+
+  // Take the next 6 intervals (each is 3 hours, so this covers 18 hours)
   return upcoming.slice(0, 6).map(item => {
     const result = getScoreForItem(item.main.temp, item.wind.speed, item.pop || 0, activity, sensitivity)
     const time = formatTime(item.dt, timezoneOffset)
@@ -124,7 +136,7 @@ function buildTodayForecast(forecastList, activity, sensitivity, timezoneOffset)
 }
 
 function buildOutlookData(forecastList, activity, sensitivity) {
-  // Group forecast intervals by day, then find the best score and temp range for each day
+  // Group all forecast intervals by day
   const days = {}
   forecastList.forEach(item => {
     const day = getDayName(item.dt)
@@ -135,14 +147,23 @@ function buildOutlookData(forecastList, activity, sensitivity) {
     days[day].temps.push(item.main.temp)
     days[day].scores.push(result.score)
   })
-  return Object.entries(days).slice(0, 5).map(([day, data]) => ({
-    day,
-    low: Math.round(Math.min(...data.temps)),
-    high: Math.round(Math.max(...data.temps)),
-    // Use the best score of the day, not the average
-    score: Math.max(...data.scores),
-    weatherCode: data.weatherCode
-  }))
+
+  // Object.entries turns the days object into an array we can loop over
+  const dayEntries = Object.entries(days).slice(0, 5)
+
+  return dayEntries.map(([day, data]) => {
+    // Add up all scores and divide by count to get the average
+    const totalScore = data.scores.reduce((sum, s) => sum + s, 0)
+    const averageScore = Math.round(totalScore / data.scores.length)
+
+    return {
+      day,
+      low: Math.round(Math.min(...data.temps)),
+      high: Math.round(Math.max(...data.temps)),
+      score: averageScore,
+      weatherCode: data.weatherCode
+    }
+  })
 }
 
 function Home({ setPage }) {
@@ -164,6 +185,7 @@ function Home({ setPage }) {
   if (weather) {
     const temp = weather.current.main.temp
     const windSpeed = weather.current.wind.speed
+    // The ?. means: if forecast[0] exists, get its pop value, otherwise use 0
     const rainChance = weather.forecast[0]?.pop || 0
 
     const result = getScoreForItem(temp, windSpeed, rainChance, activity, sensitivity)
@@ -233,7 +255,8 @@ function Home({ setPage }) {
           </div>
         )}
 
-        {weather && (
+        {/* Only show the home content once loading is done and we have weather data */}
+        {!loading && weather && (
           <>
             <div className="home-col-left">
               <ScoreGauge score={currentScore} />
@@ -270,6 +293,7 @@ function Home({ setPage }) {
                     <WaterDropIcon style={{ fontSize: 20, color: 'var(--text-muted)' }} />
                     <div>
                       <p className="conditions-stat-label">RAIN</p>
+                      {/* pop is 0 to 1, multiply by 100 to show as a percentage */}
                       <p className="conditions-stat-value">{Math.round((weather.forecast[0]?.pop || 0) * 100)}%</p>
                     </div>
                   </div>
@@ -300,9 +324,6 @@ function Home({ setPage }) {
               {scoreBreakdown && (
                 <div className="score-bars-card welcome-card-dark">
                   <p className="score-bars-title">What's affecting the score</p>
-                  <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                    Wind: {scoreBreakdown.wind.score} / Rain: {scoreBreakdown.rain.score}
-                  </p>
                   <div className="score-bars">
                     <div className="score-bar-row">
                       <span className="score-bar-label">Temperature</span>
