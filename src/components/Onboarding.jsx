@@ -1,9 +1,5 @@
 import { useState } from 'react'
 import { usePreferences } from '../context/PreferencesContext'
-import DirectionsBikeIcon from '@mui/icons-material/DirectionsBike'
-import HikingIcon from '@mui/icons-material/Hiking'
-import DirectionsRunIcon from '@mui/icons-material/DirectionsRun'
-import RowingIcon from '@mui/icons-material/Kayaking'
 
 const LOCATIONS = [
   { city: 'North Vancouver', region: 'BC', country: 'CA', lat: 49.3198, lon: -123.0724 },
@@ -20,17 +16,9 @@ const LOCATIONS = [
   { city: 'Portland', region: 'OR', country: 'US', lat: 45.5051, lon: -122.6750 },
 ]
 
-const ACTIVITIES = [
-  { id: 'cycling', label: 'CYCLING', icon: <DirectionsBikeIcon style={{ fontSize: 32 }} /> },
-  { id: 'hiking', label: 'HIKING', icon: <HikingIcon style={{ fontSize: 32 }} /> },
-  { id: 'running', label: 'RUNNING', icon: <DirectionsRunIcon style={{ fontSize: 32 }} /> },
-  { id: 'paddling', label: 'PADDLING', icon: <RowingIcon style={{ fontSize: 32 }} /> },
-]
-
 function Onboarding({ setPage }) {
-  const { setLocation, setActivity } = usePreferences()
+  const { setLocation } = usePreferences()
   const [selectedLocation, setSelectedLocation] = useState(null)
-  const [selectedActivity, setSelectedActivity] = useState(null)
   const [error, setError] = useState(false)
 
   function handleLocationChange(e) {
@@ -44,12 +32,11 @@ function Onboarding({ setPage }) {
   }
 
   function handleStart() {
-    if (!selectedLocation || !selectedActivity) {
+    if (!selectedLocation) {
       setError(true)
       return
     }
     setLocation(selectedLocation)
-    setActivity(selectedActivity)
     setPage('home')
   }
 
@@ -63,7 +50,6 @@ function Onboarding({ setPage }) {
       <p className="onboarding-instructions">Let's get you set up.</p>
 
       <div className="onboarding-cards">
-
         <div className="onboarding-card welcome-card-dark">
           <div className="onboarding-card-heading">
             <div className="step-number step-1">1</div>
@@ -83,43 +69,13 @@ function Onboarding({ setPage }) {
           </select>
           <p className="location-helper">We'll pull the live forecast from there.</p>
         </div>
-
-        <div className="onboarding-card welcome-card-dark">
-          <div className="onboarding-card-heading">
-            <div className="step-number step-2">2</div>
-            <h2>Select an activity</h2>
-          </div>
-          <div className="activity-grid">
-            {ACTIVITIES.map((activity) => (
-              <button
-                key={activity.id}
-                className={`activity-item ${selectedActivity === activity.id ? 'activity-item-active' : ''}`}
-                onClick={() => {
-                  setSelectedActivity(activity.id)
-                  setError(false)
-                }}
-              >
-                {activity.icon}
-                <span>{activity.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
       </div>
 
-      <p className="onboarding-note">You can fine-tune sensitivity for each activity later in Settings.</p>
-
       {error && (
-        <p className="onboarding-error">
-          Please select both a location and an activity to continue.
-        </p>
+        <p className="onboarding-error">Please select a location to continue.</p>
       )}
 
-      <button
-        className="btn-primary"
-        onClick={handleStart}
-      >
+      <button className="btn-primary" onClick={handleStart}>
         Start using Farcast
       </button>
 

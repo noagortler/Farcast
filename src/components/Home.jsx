@@ -5,22 +5,9 @@ import { useEffect } from 'react'
 import { usePreferences } from '../context/PreferencesContext'
 import { useWeather } from '../context/WeatherContext'
 
-// Components
-import ScoreGauge from './ScoreGauge'
-
-// Utils
-import { calculateScore } from '../utils/scoring'
-
 // Navigation icons
 import SettingsIcon from '@mui/icons-material/Settings'
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
-
-// Activity icons
-import DirectionsBikeIcon from '@mui/icons-material/DirectionsBike'
-import HikingIcon from '@mui/icons-material/Hiking'
-import DirectionsRunIcon from '@mui/icons-material/DirectionsRun'
-import KayakingIcon from '@mui/icons-material/Kayaking'
 
 // Weather icons
 import WbCloudyIcon from '@mui/icons-material/WbCloudy'
@@ -34,46 +21,29 @@ import GrainIcon from '@mui/icons-material/Grain'
 import AcUnitIcon from '@mui/icons-material/AcUnit'
 import DehazeIcon from '@mui/icons-material/Dehaze'
 
-const ACTIVITIES = [
-  { id: 'cycling', label: 'CYCLING', icon: <DirectionsBikeIcon style={{ fontSize: 28 }} /> },
-  { id: 'hiking', label: 'HIKING', icon: <HikingIcon style={{ fontSize: 28 }} /> },
-  { id: 'running', label: 'RUNNING', icon: <DirectionsRunIcon style={{ fontSize: 28 }} /> },
-  { id: 'paddling', label: 'PADDLING', icon: <KayakingIcon style={{ fontSize: 28 }} /> },
-]
-
-function getScoreColor(score) {
-  if (score >= 90) return 'var(--score-optimal)'
-  if (score >= 70) return 'var(--score-good)'
-  if (score >= 45) return 'var(--score-fair)'
-  if (score >= 20) return 'var(--score-poor)'
-  return 'var(--score-avoid)'
-}
-
-function getWeatherIcon(weatherCode, size = 40) {
+function getWeatherIcon(weatherCode, size = 40, isNight = false) {
   // OpenWeather uses numeric codes for weather conditions
-  // Full list here: https://openweathermap.org/weather-conditions
+  // Full list: https://openweathermap.org/weather-conditions
   if (weatherCode >= 200 && weatherCode < 300) return <ThunderstormIcon style={{ fontSize: size, color: 'var(--dark-navy)' }} />
   if (weatherCode >= 300 && weatherCode < 600) return <GrainIcon style={{ fontSize: size, color: 'var(--dark-navy)' }} />
   if (weatherCode >= 600 && weatherCode < 700) return <AcUnitIcon style={{ fontSize: size, color: 'var(--dark-navy)' }} />
   if (weatherCode >= 700 && weatherCode < 800) return <DehazeIcon style={{ fontSize: size, color: 'var(--dark-navy)' }} />
-  if (weatherCode === 800) return <WbSunnyIcon style={{ fontSize: size, color: '#E8C870' }} />
-  // Anything else is some kind of cloud
+  if (weatherCode === 800) {
+    return isNight
+      ? <NightsStayIcon style={{ fontSize: size, color: '#6B7E8F' }} />
+      : <WbSunnyIcon style={{ fontSize: size, color: '#E8C870' }} />
+  }
   return <WbCloudyIcon style={{ fontSize: size, color: 'var(--dark-navy)' }} />
 }
 
 function getOutlookBarStyle(low, high, allData) {
-  // Find the lowest and highest temps across all days
+  // Position each bar relative to the full week temperature range
   // The ...spread turns the array into individual values so Math.min can compare them
   const minTemp = Math.min(...allData.map(d => d.low)) - 2
   const maxTemp = Math.max(...allData.map(d => d.high)) + 2
   const range = maxTemp - minTemp
-
-  // leftPercent = how far from the left edge the bar starts
-  // widthPercent = how wide the bar is
-  // Together they position each bar relative to the full week temperature range
   const leftPercent = ((low - minTemp) / range) * 100
   const widthPercent = ((high - low) / range) * 100
-
   return {
     marginLeft: `${leftPercent}%`,
     width: `${widthPercent}%`,
@@ -84,90 +54,67 @@ function getOutlookBarStyle(low, high, allData) {
 }
 
 function formatTime(unixTimestamp, timezoneOffset) {
-  // OpenWeather gives us UTC timestamps
-  // We add the timezone offset to get the local time for that location
+  // OpenWeather gives us UTC timestamps, we add the timezone offset to get local time
   const utcMs = unixTimestamp * 1000
   const localMs = utcMs + timezoneOffset * 1000
   const date = new Date(localMs)
   const hours = date.getUTCHours()
   const minutes = date.getUTCMinutes()
   const ampm = hours >= 12 ? 'pm' : 'am'
-  // hours % 12 converts to 12-hour format, the || 12 handles midnight and noon (which would be 0)
+  // hours % 12 converts to 12-hour format, || 12 handles midnight and noon
   const displayHours = hours % 12 || 12
-  // Only show minutes if they are not zero
   if (minutes === 0) return `${displayHours} ${ampm}`
   return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`
 }
 
-function getDayName(unixTimestamp) {
-  const date = new Date(unixTimestamp * 1000)
-  const today = new Date()
-  if (date.toDateString() === today.toDateString()) return 'Today'
+function getDayName(unixTimestamp, timezoneOffset) {
+  const localMs = unixTimestamp * 1000 + timezoneOffset * 1000
+  const date = new Date(localMs)
+  const todayMs = Date.now() + timezoneOffset * 1000
+  const today = new Date(todayMs)
+  if (
+    date.getUTCFullYear() === today.getUTCFullYear() &&
+    date.getUTCMonth() === today.getUTCMonth() &&
+    date.getUTCDate() === today.getUTCDate()
+  ) return 'Today'
   return date.toLocaleDateString([], { weekday: 'short' })
 }
 
-function getScoreForItem(temp, windSpeed, rainChance, activity, sensitivity) {
-  // Multiply by 3.6 to convert metres per second to km/h
-  const wind = windSpeed * 3.6
-  // rainChance from OpenWeather is 0 to 1, multiply by 100 to get a percentage
-  const rain = rainChance * 100
-  const activitySensitivity = sensitivity[activity] || { temperature: 3, wind: 3, rain: 3 }
-  return calculateScore(temp, wind, rain, activity, activitySensitivity)
-}
-
-function buildTodayForecast(forecastList, activity, sensitivity, timezoneOffset) {
+function buildTodayForecast(forecastList, timezoneOffset) {
   // Divide by 1000 because JS uses milliseconds but OpenWeather uses seconds
   const now = Date.now() / 1000
-
-  // Only show intervals from now onwards
   const upcoming = forecastList.filter(item => item.dt >= now)
-
-  // Take the next 6 intervals (each is 3 hours, so this covers 18 hours)
-  return upcoming.slice(0, 6).map(item => {
-    const result = getScoreForItem(item.main.temp, item.wind.speed, item.pop || 0, activity, sensitivity)
-    const time = formatTime(item.dt, timezoneOffset)
-    return {
-      time,
-      temp: `${Math.round(item.main.temp)}°`,
-      score: result.score,
-      weatherCode: item.weather[0].id
-    }
-  })
+  // Take the next 8 intervals (each is 3 hours, so this covers 24 hours)
+  return upcoming.slice(0, 8).map(item => ({
+    time: formatTime(item.dt, timezoneOffset),
+    temp: Math.round(item.main.temp),
+    weatherCode: item.weather[0].id,
+    // pop is the probability of precipitation (0 to 1)
+    rain: Math.round((item.pop || 0) * 100),
+  }))
 }
 
-function buildOutlookData(forecastList, activity, sensitivity) {
+function buildOutlookData(forecastList, timezoneOffset) {
   // Group all forecast intervals by day
   const days = {}
   forecastList.forEach(item => {
-    const day = getDayName(item.dt)
+    const day = getDayName(item.dt, timezoneOffset)
     if (!days[day]) {
-      days[day] = { temps: [], scores: [], weatherCode: item.weather[0].id }
+      days[day] = { temps: [], weatherCode: item.weather[0].id }
     }
-    const result = getScoreForItem(item.main.temp, item.wind.speed, item.pop || 0, activity, sensitivity)
     days[day].temps.push(item.main.temp)
-    days[day].scores.push(result.score)
   })
-
   // Object.entries turns the days object into an array we can loop over
-  const dayEntries = Object.entries(days).slice(0, 5)
-
-  return dayEntries.map(([day, data]) => {
-    // Add up all scores and divide by count to get the average
-    const totalScore = data.scores.reduce((sum, s) => sum + s, 0)
-    const averageScore = Math.round(totalScore / data.scores.length)
-
-    return {
-      day,
-      low: Math.round(Math.min(...data.temps)),
-      high: Math.round(Math.max(...data.temps)),
-      score: averageScore,
-      weatherCode: data.weatherCode
-    }
-  })
+  return Object.entries(days).slice(0, 5).map(([day, data]) => ({
+    day,
+    low: Math.round(Math.min(...data.temps)),
+    high: Math.round(Math.max(...data.temps)),
+    weatherCode: data.weatherCode
+  }))
 }
 
 function Home({ setPage }) {
-  const { location, activity, setActivity, sensitivity } = usePreferences()
+  const { location } = usePreferences()
   const { weather, loading, error, fetchWeather } = useWeather()
 
   useEffect(() => {
@@ -176,24 +123,19 @@ function Home({ setPage }) {
     }
   }, [location])
 
-  // Only compute derived data if weather is available
-  let currentScore = null
-  let scoreBreakdown = null
   let todayForecast = []
   let outlookData = []
+  let isNight = false
 
   if (weather) {
-    const temp = weather.current.main.temp
-    const windSpeed = weather.current.wind.speed
-    // The ?. means: if forecast[0] exists, get its pop value, otherwise use 0
-    const rainChance = weather.forecast[0]?.pop || 0
-
-    const result = getScoreForItem(temp, windSpeed, rainChance, activity, sensitivity)
-    currentScore = result.score
-    scoreBreakdown = result.breakdown
-
-    todayForecast = buildTodayForecast(weather.forecast, activity, sensitivity, weather.current.timezone)
-    outlookData = buildOutlookData(weather.forecast, activity, sensitivity)
+    const timezoneOffset = weather.current.timezone
+    const now = Date.now() / 1000
+    const sunrise = weather.current.sys.sunrise
+    const sunset = weather.current.sys.sunset
+    // Check if it is currently night at the selected location
+    isNight = now < sunrise || now > sunset
+    todayForecast = buildTodayForecast(weather.forecast, timezoneOffset)
+    outlookData = buildOutlookData(weather.forecast, timezoneOffset)
   }
 
   return (
@@ -209,35 +151,10 @@ function Home({ setPage }) {
             </div>
           </div>
           <div className="home-nav-icons">
-            <button onClick={() => setPage('about')}>
-              <InfoOutlinedIcon style={{ fontSize: 22, color: 'var(--dark-navy)' }} />
-            </button>
             <button onClick={() => setPage('settings')}>
               <SettingsIcon style={{ fontSize: 22, color: 'var(--dark-navy)' }} />
             </button>
           </div>
-        </div>
-
-        <div className="home-nav-activities">
-          {ACTIVITIES.map((a) => (
-            <button
-              key={a.id}
-              className={`activity-tab ${activity === a.id ? 'activity-tab-active' : ''}`}
-              onClick={() => setActivity(a.id)}
-            >
-              {a.icon}
-              <span>{a.label}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className="home-desktop-icons">
-          <button onClick={() => setPage('about')}>
-            <InfoOutlinedIcon style={{ fontSize: 22, color: 'var(--dark-navy)' }} />
-          </button>
-          <button onClick={() => setPage('settings')}>
-            <SettingsIcon style={{ fontSize: 22, color: 'var(--dark-navy)' }} />
-          </button>
         </div>
       </nav>
 
@@ -255,19 +172,9 @@ function Home({ setPage }) {
           </div>
         )}
 
-        {/* Only show the home content once loading is done and we have weather data */}
         {!loading && weather && (
           <>
             <div className="home-col-left">
-              <ScoreGauge score={currentScore} />
-              <div className="best-window-card welcome-card-dark">
-                <p className="best-window-label">BEST WINDOW FOR {activity.toUpperCase()}</p>
-                <p className="best-window-time">12pm – 3pm</p>
-                <p className="best-window-desc">mild wind & low chance of rain</p>
-              </div>
-            </div>
-
-            <div className="home-col-center">
               <div className="conditions-card welcome-card-dark">
                 <div className="conditions-top">
                   <div className="conditions-temp">
@@ -275,7 +182,7 @@ function Home({ setPage }) {
                     <span className="conditions-feels-like">Feels like {Math.round(weather.current.main.feels_like)}°</span>
                   </div>
                   <div className="conditions-weather">
-                    {getWeatherIcon(weather.current.weather[0].id, 40)}
+                    {getWeatherIcon(weather.current.weather[0].id, 40, isNight)}
                     <span className="conditions-desc" style={{ textTransform: 'capitalize' }}>
                       {weather.current.weather[0].description}
                     </span>
@@ -320,65 +227,27 @@ function Home({ setPage }) {
                   <p className="sunrise-sunset-time">{formatTime(weather.current.sys.sunset, weather.current.timezone)}</p>
                 </div>
               </div>
-
-              {scoreBreakdown && (
-                <div className="score-bars-card welcome-card-dark">
-                  <p className="score-bars-title">What's affecting the score</p>
-                  <div className="score-bars">
-                    <div className="score-bar-row">
-                      <span className="score-bar-label">Temperature</span>
-                      <div className="score-bar-track">
-                        <div className="score-bar-fill" style={{
-                          width: `${scoreBreakdown.temperature.score}%`,
-                          backgroundColor: getScoreColor(scoreBreakdown.temperature.score)
-                        }} />
-                      </div>
-                      <span className="score-bar-value">{Math.round(weather.current.main.temp)}°</span>
-                    </div>
-                    <div className="score-bar-row">
-                      <span className="score-bar-label">Wind</span>
-                      <div className="score-bar-track">
-                        <div className="score-bar-fill" style={{
-                          width: `${scoreBreakdown.wind.score}%`,
-                          backgroundColor: getScoreColor(scoreBreakdown.wind.score)
-                        }} />
-                      </div>
-                      <span className="score-bar-value">{Math.round(weather.current.wind.speed * 3.6)} km/h</span>
-                    </div>
-                    <div className="score-bar-row">
-                      <span className="score-bar-label">Rain</span>
-                      <div className="score-bar-track">
-                        <div className="score-bar-fill" style={{
-                          width: `${scoreBreakdown.rain.score}%`,
-                          backgroundColor: getScoreColor(scoreBreakdown.rain.score)
-                        }} />
-                      </div>
-                      <span className="score-bar-value">{Math.round((weather.forecast[0]?.pop || 0) * 100)}%</span>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
 
-            <div className="home-col-right">
+            <div className="home-col-center">
               <div className="forecast-card welcome-card-dark">
-                <p className="forecast-title">Today's forecast</p>
+                <p className="forecast-title">Next 24 hours</p>
                 <div className="forecast-scroll">
                   {todayForecast.map((item, i) => (
                     <div key={i} className="forecast-item">
                       <span className="forecast-time">{item.time}</span>
                       {getWeatherIcon(item.weatherCode, 24)}
-                      <span className="forecast-temp">{item.temp}</span>
-                      <span className="forecast-score" style={{ color: getScoreColor(item.score) }}>
-                        {item.score}
-                      </span>
+                      <span className="forecast-temp">{item.temp}°</span>
+                      <span className="forecast-rain">{item.rain}%</span>
                     </div>
                   ))}
                 </div>
               </div>
+            </div>
 
+            <div className="home-col-right">
               <div className="outlook-card welcome-card-dark">
-                <p className="outlook-title">5-day outlook</p>
+                <p className="outlook-title">5-day forecast</p>
                 <div className="outlook-list">
                   {outlookData.map((item) => (
                     <div key={item.day} className="outlook-row">
@@ -389,9 +258,6 @@ function Home({ setPage }) {
                         <div style={getOutlookBarStyle(item.low, item.high, outlookData)} />
                       </div>
                       <span className="outlook-high">{item.high}°</span>
-                      <span className="outlook-score" style={{ color: getScoreColor(item.score) }}>
-                        {item.score}
-                      </span>
                     </div>
                   ))}
                 </div>
