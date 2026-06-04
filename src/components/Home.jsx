@@ -1,5 +1,5 @@
 // React
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 // Context
 import { usePreferences } from '../context/PreferencesContext'
@@ -8,6 +8,7 @@ import { useWeather } from '../context/WeatherContext'
 // Navigation icons
 import SettingsIcon from '@mui/icons-material/Settings'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
+import SearchIcon from '@mui/icons-material/Search'
 
 // Weather icons
 import WbCloudyIcon from '@mui/icons-material/WbCloudy'
@@ -21,9 +22,22 @@ import GrainIcon from '@mui/icons-material/Grain'
 import AcUnitIcon from '@mui/icons-material/AcUnit'
 import DehazeIcon from '@mui/icons-material/Dehaze'
 
+const LOCATIONS = [
+  { city: 'North Vancouver', region: 'BC', country: 'CA', lat: 49.3198, lon: -123.0724 },
+  { city: 'Vancouver', region: 'BC', country: 'CA', lat: 49.2827, lon: -123.1207 },
+  { city: 'Whistler', region: 'BC', country: 'CA', lat: 50.1163, lon: -122.9574 },
+  { city: 'Squamish', region: 'BC', country: 'CA', lat: 49.7016, lon: -123.1558 },
+  { city: 'Kelowna', region: 'BC', country: 'CA', lat: 49.8880, lon: -119.4960 },
+  { city: 'Victoria', region: 'BC', country: 'CA', lat: 48.4284, lon: -123.3656 },
+  { city: 'Calgary', region: 'AB', country: 'CA', lat: 51.0447, lon: -114.0719 },
+  { city: 'Banff', region: 'AB', country: 'CA', lat: 51.1784, lon: -115.5708 },
+  { city: 'Toronto', region: 'ON', country: 'CA', lat: 43.6532, lon: -79.3832 },
+  { city: 'Ottawa', region: 'ON', country: 'CA', lat: 45.4215, lon: -75.6972 },
+  { city: 'Seattle', region: 'WA', country: 'US', lat: 47.6062, lon: -122.3321 },
+  { city: 'Portland', region: 'OR', country: 'US', lat: 45.5051, lon: -122.6750 },
+]
+
 function getWeatherIcon(weatherCode, size = 40, isNight = false) {
-  // OpenWeather uses numeric codes for weather conditions
-  // Full list: https://openweathermap.org/weather-conditions
   if (weatherCode >= 200 && weatherCode < 300) return <ThunderstormIcon style={{ fontSize: size, color: 'var(--dark-navy)' }} />
   if (weatherCode >= 300 && weatherCode < 600) return <GrainIcon style={{ fontSize: size, color: 'var(--dark-navy)' }} />
   if (weatherCode >= 600 && weatherCode < 700) return <AcUnitIcon style={{ fontSize: size, color: 'var(--dark-navy)' }} />
@@ -37,8 +51,6 @@ function getWeatherIcon(weatherCode, size = 40, isNight = false) {
 }
 
 function getOutlookBarStyle(low, high, allData) {
-  // Position each bar relative to the full week temperature range
-  // The ...spread turns the array into individual values so Math.min can compare them
   const minTemp = Math.min(...allData.map(d => d.low)) - 2
   const maxTemp = Math.max(...allData.map(d => d.high)) + 2
   const range = maxTemp - minTemp
@@ -54,14 +66,12 @@ function getOutlookBarStyle(low, high, allData) {
 }
 
 function formatTime(unixTimestamp, timezoneOffset) {
-  // OpenWeather gives us UTC timestamps, we add the timezone offset to get local time
   const utcMs = unixTimestamp * 1000
   const localMs = utcMs + timezoneOffset * 1000
   const date = new Date(localMs)
   const hours = date.getUTCHours()
   const minutes = date.getUTCMinutes()
   const ampm = hours >= 12 ? 'pm' : 'am'
-  // hours % 12 converts to 12-hour format, || 12 handles midnight and noon
   const displayHours = hours % 12 || 12
   if (minutes === 0) return `${displayHours} ${ampm}`
   return `${displayHours}:${minutes.toString().padStart(2, '0')} ${ampm}`
@@ -81,21 +91,17 @@ function getDayName(unixTimestamp, timezoneOffset) {
 }
 
 function buildTodayForecast(forecastList, timezoneOffset) {
-  // Divide by 1000 because JS uses milliseconds but OpenWeather uses seconds
   const now = Date.now() / 1000
   const upcoming = forecastList.filter(item => item.dt >= now)
-  // Take the next 8 intervals (each is 3 hours, so this covers 24 hours)
   return upcoming.slice(0, 8).map(item => ({
     time: formatTime(item.dt, timezoneOffset),
     temp: Math.round(item.main.temp),
     weatherCode: item.weather[0].id,
-    // pop is the probability of precipitation (0 to 1)
     rain: Math.round((item.pop || 0) * 100),
   }))
 }
 
 function buildOutlookData(forecastList, timezoneOffset) {
-  // Group all forecast intervals by day
   const days = {}
   forecastList.forEach(item => {
     const day = getDayName(item.dt, timezoneOffset)
@@ -104,7 +110,6 @@ function buildOutlookData(forecastList, timezoneOffset) {
     }
     days[day].temps.push(item.main.temp)
   })
-  // Object.entries turns the days object into an array we can loop over
   return Object.entries(days).slice(0, 5).map(([day, data]) => ({
     day,
     low: Math.round(Math.min(...data.temps)),
@@ -114,14 +119,20 @@ function buildOutlookData(forecastList, timezoneOffset) {
 }
 
 function Home({ setPage }) {
-  const { location } = usePreferences()
+  const { location, setLocation } = usePreferences()
   const { weather, loading, error, fetchWeather } = useWeather()
+  const [showLocationPicker, setShowLocationPicker] = useState(false)
 
   useEffect(() => {
     if (location) {
       fetchWeather(location.lat, location.lon)
     }
   }, [location])
+
+  function handleLocationSelect(loc) {
+    setLocation(loc)
+    setShowLocationPicker(false)
+  }
 
   let todayForecast = []
   let outlookData = []
@@ -132,7 +143,6 @@ function Home({ setPage }) {
     const now = Date.now() / 1000
     const sunrise = weather.current.sys.sunrise
     const sunset = weather.current.sys.sunset
-    // Check if it is currently night at the selected location
     isNight = now < sunrise || now > sunset
     todayForecast = buildTodayForecast(weather.forecast, timezoneOffset)
     outlookData = buildOutlookData(weather.forecast, timezoneOffset)
@@ -142,20 +152,57 @@ function Home({ setPage }) {
     <div className="home">
 
       <nav className="home-nav">
-        <div className="home-nav-brand">
-          <div className="home-nav-brand-left">
-            <h1 className="wordmark"><span className="far">FAR</span><span className="cast">CAST</span></h1>
-            <div className="home-location">
-              <LocationOnIcon style={{ fontSize: 14 }} />
-              <span>{location?.city}, {location?.region}</span>
-            </div>
-          </div>
-          <div className="home-nav-icons">
-            <button onClick={() => setPage('settings')}>
-              <SettingsIcon style={{ fontSize: 22, color: 'var(--dark-navy)' }} />
-            </button>
+        {/* Left: wordmark + location */}
+        <div className="home-nav-left">
+          <h1 className="wordmark"><span className="far">FAR</span><span className="cast">CAST</span></h1>
+          <div className="home-nav-location">
+            <LocationOnIcon style={{ fontSize: 14 }} />
+            <span>{location?.city}, {location?.region}</span>
           </div>
         </div>
+
+        {/* Right: search + settings */}
+        <div className="home-nav-right">
+          {/* Search bar — desktop only */}
+          <button
+            className="home-search-bar"
+            onClick={() => setShowLocationPicker(!showLocationPicker)}
+          >
+            <SearchIcon style={{ fontSize: 18, color: 'var(--text-muted)' }} />
+            <span>Search a city</span>
+          </button>
+
+          {/* Search icon — mobile only */}
+          <button
+            className="home-nav-icon-btn mobile-search"
+            onClick={() => setShowLocationPicker(!showLocationPicker)}
+          >
+            <SearchIcon style={{ fontSize: 20, color: 'var(--dark-navy)' }} />
+          </button>
+
+          <button
+            className="home-nav-icon-btn"
+            onClick={() => setPage('settings')}
+          >
+            <SettingsIcon style={{ fontSize: 20, color: 'var(--dark-navy)' }} />
+          </button>
+        </div>
+
+        {/* Dropdown list of cities */}
+        {showLocationPicker && (
+          <div className="location-dropdown">
+            {LOCATIONS.map((loc) => (
+              <button
+                key={loc.city}
+                className="location-dropdown-item"
+                onClick={() => handleLocationSelect(loc)}
+              >
+                <LocationOnIcon style={{ fontSize: 14 }} />
+                <span>{loc.city}, {loc.region}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </nav>
 
       <div className="home-body">
@@ -200,7 +247,6 @@ function Home({ setPage }) {
                     <WaterDropIcon style={{ fontSize: 20, color: 'var(--text-muted)' }} />
                     <div>
                       <p className="conditions-stat-label">RAIN</p>
-                      {/* pop is 0 to 1, multiply by 100 to show as a percentage */}
                       <p className="conditions-stat-value">{Math.round((weather.forecast[0]?.pop || 0) * 100)}%</p>
                     </div>
                   </div>
