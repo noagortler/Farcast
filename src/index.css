@@ -462,10 +462,7 @@ button {
   background: rgba(255, 255, 255, 0.45);
 }
 
-/* Search bar hidden on mobile */
-.home-search-bar {
-  display: none;
-}
+.home-search-bar { display: none; }
 
 /* Location Dropdown */
 
@@ -493,9 +490,7 @@ button {
   border-bottom: 1px solid var(--border);
 }
 
-.location-dropdown-item:hover {
-  background: var(--card-dark);
-}
+.location-dropdown-item:hover { background: var(--card-dark); }
 
 /* Body */
 
@@ -515,7 +510,6 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: var(--s3);
 }
 
 .conditions-temp {
@@ -537,6 +531,11 @@ button {
   color: var(--text-muted);
 }
 
+.conditions-high-low {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
 .conditions-weather {
   display: flex;
   flex-direction: column;
@@ -545,74 +544,93 @@ button {
 }
 
 .conditions-desc {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-muted);
 }
 
-.conditions-stats {
+/* Today's Conditions Grid */
+
+.today-conditions-card {
+  border-radius: 16px;
+  padding: var(--s3);
+  margin-top: var(--s3);
+}
+
+.today-conditions-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--s3);
+}
+
+.today-conditions-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: var(--s2);
 }
 
-.conditions-stat {
-  display: flex;
-  align-items: center;
-  gap: var(--s1);
+.today-condition-stat {
   background: rgba(255, 255, 255, 0.45);
-  border-radius: 10px;
-  padding: var(--s1) var(--s2);
+  border-radius: 12px;
+  padding: var(--s2);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.conditions-stat-label {
+.today-condition-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+
+.today-condition-label {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.5px;
   color: var(--text-muted);
 }
 
-.conditions-stat-value {
-  font-size: 15px;
+.today-condition-value {
+  font-size: 22px;
   font-weight: 700;
   color: var(--dark-navy);
+  line-height: 1;
 }
 
-/* Sunrise and Sunset */
-
-.sunrise-sunset-card {
-  border-radius: 16px;
-  padding: var(--s3);
-  margin-top: var(--s3);
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-}
-
-.sunrise-sunset-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.sunrise-sunset-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1px;
+.today-condition-unit {
+  font-size: 13px;
+  font-weight: 400;
   color: var(--text-muted);
 }
 
-.sunrise-sunset-time {
-  font-family: 'Sora', sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--dark-navy);
+.today-condition-sub {
+  font-size: 12px;
+  color: var(--text-muted);
 }
 
-.sunrise-sunset-divider {
-  width: 1px;
-  height: 48px;
-  background: var(--border);
+.today-conditions-sun {
+  display: flex;
+  justify-content: space-around;
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px solid var(--border);
+}
+
+.today-conditions-sun-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+}
+
+.today-condition-sun-time {
+  font-family: 'Sora', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--dark-navy);
 }
 
 /* Forecast */
@@ -772,9 +790,7 @@ button {
 @media (min-width: 943px) {
   .home { min-height: unset; }
 
-  .home-nav {
-    padding: var(--s2) var(--s4);
-  }
+  .home-nav { padding: var(--s2) var(--s4); }
 
   .home-nav-left .wordmark { font-size: 26px; }
 
@@ -792,9 +808,7 @@ button {
     width: 220px;
   }
 
-  .home-search-bar:hover {
-    background: rgba(255, 255, 255, 0.9);
-  }
+  .home-search-bar:hover { background: rgba(255, 255, 255, 0.9); }
 
   .mobile-search { display: none; }
 
@@ -829,7 +843,7 @@ button {
   .conditions-temp-value { font-size: 96px; }
 
   .conditions-card,
-  .sunrise-sunset-card,
+  .today-conditions-card,
   .forecast-card,
   .outlook-card {
     margin-top: 0;

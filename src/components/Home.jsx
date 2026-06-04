@@ -21,6 +21,9 @@ import ThunderstormIcon from '@mui/icons-material/Thunderstorm'
 import GrainIcon from '@mui/icons-material/Grain'
 import AcUnitIcon from '@mui/icons-material/AcUnit'
 import DehazeIcon from '@mui/icons-material/Dehaze'
+import VisibilityIcon from '@mui/icons-material/Visibility'
+import CompressIcon from '@mui/icons-material/Compress'
+import CloudIcon from '@mui/icons-material/Cloud'
 
 const LOCATIONS = [
   { city: 'North Vancouver', region: 'BC', country: 'CA', lat: 49.3198, lon: -123.0724 },
@@ -118,6 +121,33 @@ function buildOutlookData(forecastList, timezoneOffset) {
   }))
 }
 
+function getWindDirection(degrees) {
+  const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW']
+  const index = Math.round(degrees / 45) % 8
+  return directions[index]
+}
+
+function getHumidityLabel(humidity) {
+  if (humidity < 30) return 'Dry air'
+  if (humidity < 60) return 'Comfortable'
+  if (humidity < 80) return 'Damp air'
+  return 'Very humid'
+}
+
+function getVisibilityLabel(metres) {
+  if (metres >= 8000) return 'Clear view'
+  if (metres >= 4000) return 'Mostly clear'
+  if (metres >= 1000) return 'Hazy'
+  return 'Poor visibility'
+}
+
+function getCloudLabel(percent) {
+  if (percent < 20) return 'Clear skies'
+  if (percent < 50) return 'Partly cloudy'
+  if (percent < 80) return 'Mostly cloudy'
+  return 'Overcast'
+}
+
 function Home({ setPage }) {
   const { location, setLocation } = usePreferences()
   const { weather, loading, error, fetchWeather } = useWeather()
@@ -137,6 +167,8 @@ function Home({ setPage }) {
   let todayForecast = []
   let outlookData = []
   let isNight = false
+  let todayHigh = null
+  let todayLow = null
 
   if (weather) {
     const timezoneOffset = weather.current.timezone
@@ -146,13 +178,22 @@ function Home({ setPage }) {
     isNight = now < sunrise || now > sunset
     todayForecast = buildTodayForecast(weather.forecast, timezoneOffset)
     outlookData = buildOutlookData(weather.forecast, timezoneOffset)
+
+    // Get today's high and low from the forecast
+    const todayTemps = weather.forecast
+      .filter(item => getDayName(item.dt, timezoneOffset) === 'Today')
+      .map(item => item.main.temp)
+
+    if (todayTemps.length > 0) {
+      todayHigh = Math.round(Math.max(...todayTemps))
+      todayLow = Math.round(Math.min(...todayTemps))
+    }
   }
 
   return (
     <div className="home">
 
       <nav className="home-nav">
-        {/* Left: wordmark + location */}
         <div className="home-nav-left">
           <h1 className="wordmark"><span className="far">FAR</span><span className="cast">CAST</span></h1>
           <div className="home-nav-location">
@@ -161,9 +202,7 @@ function Home({ setPage }) {
           </div>
         </div>
 
-        {/* Right: search + settings */}
         <div className="home-nav-right">
-          {/* Search bar — desktop only */}
           <button
             className="home-search-bar"
             onClick={() => setShowLocationPicker(!showLocationPicker)}
@@ -172,7 +211,6 @@ function Home({ setPage }) {
             <span>Search a city</span>
           </button>
 
-          {/* Search icon — mobile only */}
           <button
             className="home-nav-icon-btn mobile-search"
             onClick={() => setShowLocationPicker(!showLocationPicker)}
@@ -188,7 +226,6 @@ function Home({ setPage }) {
           </button>
         </div>
 
-        {/* Dropdown list of cities */}
         {showLocationPicker && (
           <div className="location-dropdown">
             {LOCATIONS.map((loc) => (
@@ -222,57 +259,107 @@ function Home({ setPage }) {
         {!loading && weather && (
           <>
             <div className="home-col-left">
+
               <div className="conditions-card welcome-card-dark">
                 <div className="conditions-top">
                   <div className="conditions-temp">
                     <span className="conditions-temp-value">{Math.round(weather.current.main.temp)}°</span>
-                    <span className="conditions-feels-like">Feels like {Math.round(weather.current.main.feels_like)}°</span>
-                  </div>
-                  <div className="conditions-weather">
-                    {getWeatherIcon(weather.current.weather[0].id, 40, isNight)}
                     <span className="conditions-desc" style={{ textTransform: 'capitalize' }}>
                       {weather.current.weather[0].description}
                     </span>
+                    <span className="conditions-feels-like">Feels like {Math.round(weather.current.main.feels_like)}°</span>
+                    {todayHigh !== null && (
+                      <span className="conditions-high-low">H: {todayHigh}° · L: {todayLow}°</span>
+                    )}
                   </div>
-                </div>
-                <div className="conditions-stats">
-                  <div className="conditions-stat">
-                    <AirIcon style={{ fontSize: 20, color: 'var(--text-muted)' }} />
-                    <div>
-                      <p className="conditions-stat-label">WIND</p>
-                      <p className="conditions-stat-value">{Math.round(weather.current.wind.speed * 3.6)} km/h</p>
-                    </div>
-                  </div>
-                  <div className="conditions-stat">
-                    <WaterDropIcon style={{ fontSize: 20, color: 'var(--text-muted)' }} />
-                    <div>
-                      <p className="conditions-stat-label">RAIN</p>
-                      <p className="conditions-stat-value">{Math.round((weather.forecast[0]?.pop || 0) * 100)}%</p>
-                    </div>
-                  </div>
-                  <div className="conditions-stat">
-                    <OpacityIcon style={{ fontSize: 20, color: 'var(--text-muted)' }} />
-                    <div>
-                      <p className="conditions-stat-label">HUMIDITY</p>
-                      <p className="conditions-stat-value">{weather.current.main.humidity}%</p>
-                    </div>
+                  <div className="conditions-weather">
+                    {getWeatherIcon(weather.current.weather[0].id, 48, isNight)}
                   </div>
                 </div>
               </div>
 
-              <div className="sunrise-sunset-card welcome-card-dark">
-                <div className="sunrise-sunset-item">
-                  <WbSunnyIcon style={{ fontSize: 28, color: '#E8C870' }} />
-                  <p className="sunrise-sunset-label">SUNRISE</p>
-                  <p className="sunrise-sunset-time">{formatTime(weather.current.sys.sunrise, weather.current.timezone)}</p>
+              <div className="today-conditions-card welcome-card-dark">
+                <p className="today-conditions-title">Today's conditions</p>
+                <div className="today-conditions-grid">
+
+                  <div className="today-condition-stat">
+                    <div className="today-condition-header">
+                      <AirIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
+                      <span className="today-condition-label">WIND</span>
+                    </div>
+                    <p className="today-condition-value">{Math.round(weather.current.wind.speed * 3.6)} <span className="today-condition-unit">km/h</span></p>
+                    <p className="today-condition-sub">From the {getWindDirection(weather.current.wind.deg)}</p>
+                  </div>
+
+                  <div className="today-condition-stat">
+                    <div className="today-condition-header">
+                      <WaterDropIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
+                      <span className="today-condition-label">RAIN</span>
+                    </div>
+                    <p className="today-condition-value">{Math.round((weather.forecast[0]?.pop || 0) * 100)} <span className="today-condition-unit">%</span></p>
+                    <p className="today-condition-sub">
+                      {weather.current.rain?.['1h'] ? `${weather.current.rain['1h']} mm in 1 hr` : '0 mm in 1 hr'}
+                    </p>
+                  </div>
+
+                  <div className="today-condition-stat">
+                    <div className="today-condition-header">
+                      <OpacityIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
+                      <span className="today-condition-label">HUMIDITY</span>
+                    </div>
+                    <p className="today-condition-value">{weather.current.main.humidity} <span className="today-condition-unit">%</span></p>
+                    <p className="today-condition-sub">{getHumidityLabel(weather.current.main.humidity)}</p>
+                  </div>
+
+                  <div className="today-condition-stat">
+                    <div className="today-condition-header">
+                      <CloudIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
+                      <span className="today-condition-label">CLOUD COVER</span>
+                    </div>
+                    <p className="today-condition-value">{weather.current.clouds.all} <span className="today-condition-unit">%</span></p>
+                    <p className="today-condition-sub">{getCloudLabel(weather.current.clouds.all)}</p>
+                  </div>
+
+                  <div className="today-condition-stat">
+                    <div className="today-condition-header">
+                      <CompressIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
+                      <span className="today-condition-label">PRESSURE</span>
+                    </div>
+                    <p className="today-condition-value">{weather.current.main.pressure} <span className="today-condition-unit">hPa</span></p>
+                    <p className="today-condition-sub">Steady</p>
+                  </div>
+
+                  <div className="today-condition-stat">
+                    <div className="today-condition-header">
+                      <VisibilityIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
+                      <span className="today-condition-label">VISIBILITY</span>
+                    </div>
+                    <p className="today-condition-value">{Math.round((weather.current.visibility || 10000) / 1000)} <span className="today-condition-unit">km</span></p>
+                    <p className="today-condition-sub">{getVisibilityLabel(weather.current.visibility || 10000)}</p>
+                  </div>
+
                 </div>
-                <div className="sunrise-sunset-divider" />
-                <div className="sunrise-sunset-item">
-                  <NightsStayIcon style={{ fontSize: 28, color: '#6B7E8F' }} />
-                  <p className="sunrise-sunset-label">SUNSET</p>
-                  <p className="sunrise-sunset-time">{formatTime(weather.current.sys.sunset, weather.current.timezone)}</p>
+
+                {/* Sunrise and sunset at the bottom of the conditions card */}
+                <div className="today-conditions-sun">
+                  <div className="today-conditions-sun-item">
+                    <WbSunnyIcon style={{ fontSize: 20, color: '#E8C870' }} />
+                    <div>
+                      <p className="today-condition-label">SUNRISE</p>
+                      <p className="today-condition-sun-time">{formatTime(weather.current.sys.sunrise, weather.current.timezone)}</p>
+                    </div>
+                  </div>
+                  <div className="today-conditions-sun-item">
+                    <NightsStayIcon style={{ fontSize: 20, color: '#6B7E8F' }} />
+                    <div>
+                      <p className="today-condition-label">SUNSET</p>
+                      <p className="today-condition-sun-time">{formatTime(weather.current.sys.sunset, weather.current.timezone)}</p>
+                    </div>
+                  </div>
                 </div>
+
               </div>
+
             </div>
 
             <div className="home-col-center">
