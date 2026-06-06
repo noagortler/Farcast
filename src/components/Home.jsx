@@ -40,6 +40,26 @@ const LOCATIONS = [
   { city: 'Portland', region: 'OR', country: 'US', lat: 45.5051, lon: -122.6750 },
 ]
 
+// Unit conversion helpers
+
+function convertTemp(celsius, unit) {
+  if (unit === 'F') return Math.round(celsius * 9 / 5 + 32)
+  return Math.round(celsius)
+}
+
+function convertWind(ms, unit) {
+  if (unit === 'mph') return Math.round(ms * 2.237)
+  return Math.round(ms * 3.6)
+}
+
+function getTempUnit(unit) {
+  return unit === 'F' ? '°F' : '°C'
+}
+
+function getWindUnit(unit) {
+  return unit === 'mph' ? 'mph' : 'km/h'
+}
+
 function getWeatherIcon(weatherCode, size = 40, isNight = false) {
   if (weatherCode >= 200 && weatherCode < 300) return <ThunderstormIcon style={{ fontSize: size, color: 'var(--dark-navy)' }} />
   if (weatherCode >= 300 && weatherCode < 600) return <GrainIcon style={{ fontSize: size, color: 'var(--dark-navy)' }} />
@@ -68,12 +88,19 @@ function getOutlookBarStyle(low, high, allData) {
   }
 }
 
-function formatTime(unixTimestamp, timezoneOffset) {
+function formatTime(unixTimestamp, timezoneOffset, timeFormat = '12h') {
+  // Convert unix timestamp to local time using the location's timezone offset
   const utcMs = unixTimestamp * 1000
   const localMs = utcMs + timezoneOffset * 1000
   const date = new Date(localMs)
   const hours = date.getUTCHours()
   const minutes = date.getUTCMinutes()
+
+  if (timeFormat === '24h') {
+    const paddedMinutes = minutes.toString().padStart(2, '0')
+    return `${hours}:${paddedMinutes}`
+  }
+
   const ampm = hours >= 12 ? 'pm' : 'am'
   const displayHours = hours % 12 || 12
   if (minutes === 0) return `${displayHours} ${ampm}`
@@ -93,18 +120,18 @@ function getDayName(unixTimestamp, timezoneOffset) {
   return date.toLocaleDateString([], { weekday: 'short' })
 }
 
-function buildTodayForecast(forecastList, timezoneOffset) {
+function buildTodayForecast(forecastList, timezoneOffset, timeFormat, tempUnit) {
   const now = Date.now() / 1000
   const upcoming = forecastList.filter(item => item.dt >= now)
   return upcoming.slice(0, 8).map(item => ({
-    time: formatTime(item.dt, timezoneOffset),
-    temp: Math.round(item.main.temp),
+    time: formatTime(item.dt, timezoneOffset, timeFormat),
+    temp: convertTemp(item.main.temp, tempUnit),
     weatherCode: item.weather[0].id,
     rain: Math.round((item.pop || 0) * 100),
   }))
 }
 
-function buildOutlookData(forecastList, timezoneOffset) {
+function buildOutlookData(forecastList, timezoneOffset, tempUnit) {
   const days = {}
   forecastList.forEach(item => {
     const day = getDayName(item.dt, timezoneOffset)
@@ -115,8 +142,8 @@ function buildOutlookData(forecastList, timezoneOffset) {
   })
   return Object.entries(days).slice(0, 5).map(([day, data]) => ({
     day,
-    low: Math.round(Math.min(...data.temps)),
-    high: Math.round(Math.max(...data.temps)),
+    low: convertTemp(Math.min(...data.temps), tempUnit),
+    high: convertTemp(Math.max(...data.temps), tempUnit),
     weatherCode: data.weatherCode
   }))
 }
@@ -166,16 +193,17 @@ function getChangeHeadline(category, time) {
   return `Clouding over by ${time}`
 }
 
-function getChangeDescription(fromCategory, toCategory, temp, time) {
-  if (toCategory === 'clear') return `Conditions improving through the morning, with a high of ${temp}° expected around ${time}.`
-  if (toCategory === 'rain') return `Rain expected to move in around ${time}, with temperatures around ${temp}°.`
-  if (toCategory === 'storm') return `Storms likely to develop around ${time}. Temperatures around ${temp}°.`
-  if (toCategory === 'snow') return `Snow expected to arrive around ${time}. Temperatures dropping to ${temp}°.`
-  if (toCategory === 'cloudy') return `Clouds building through the morning, with temperatures around ${temp}° by ${time}.`
-  return `Conditions changing around ${time}, with temperatures around ${temp}°.`
+function getChangeDescription(fromCategory, toCategory, temp, unit, time) {
+  const t = `${temp}°${unit === 'F' ? 'F' : 'C'}`
+  if (toCategory === 'clear') return `Conditions improving through the morning, with a high of ${t} expected around ${time}.`
+  if (toCategory === 'rain') return `Rain expected to move in around ${time}, with temperatures around ${t}.`
+  if (toCategory === 'storm') return `Storms likely to develop around ${time}. Temperatures around ${t}.`
+  if (toCategory === 'snow') return `Snow expected to arrive around ${time}. Temperatures dropping to ${t}.`
+  if (toCategory === 'cloudy') return `Clouds building through the morning, with temperatures around ${t} by ${time}.`
+  return `Conditions changing around ${time}, with temperatures around ${t}.`
 }
 
-function getNextChange(currentWeatherCode, forecastList, timezoneOffset) {
+function getNextChange(currentWeatherCode, forecastList, timezoneOffset, timeFormat, tempUnit) {
   const currentCategory = getWeatherCategory(currentWeatherCode)
   const now = Date.now() / 1000
   const upcoming = forecastList.filter(item => item.dt >= now)
@@ -185,12 +213,12 @@ function getNextChange(currentWeatherCode, forecastList, timezoneOffset) {
     if (hoursAway > 24) break
     const itemCategory = getWeatherCategory(item.weather[0].id)
     if (itemCategory !== currentCategory) {
-      const time = formatTime(item.dt, timezoneOffset)
-      const temp = Math.round(item.main.temp)
+      const time = formatTime(item.dt, timezoneOffset, timeFormat)
+      const temp = convertTemp(item.main.temp, tempUnit)
       const rainChance = Math.round((item.pop || 0) * 100)
       return {
         headline: getChangeHeadline(itemCategory, time),
-        description: getChangeDescription(currentCategory, itemCategory, temp, time),
+        description: getChangeDescription(currentCategory, itemCategory, temp, tempUnit, time),
         hoursAway: Math.round(hoursAway),
         temp,
         time,
@@ -203,7 +231,7 @@ function getNextChange(currentWeatherCode, forecastList, timezoneOffset) {
 }
 
 function Home({ setPage }) {
-  const { location, setLocation } = usePreferences()
+  const { location, setLocation, tempUnit, windUnit, timeFormat } = usePreferences()
   const { weather, loading, error, fetchWeather } = useWeather()
   const [showLocationPicker, setShowLocationPicker] = useState(false)
 
@@ -231,25 +259,29 @@ function Home({ setPage }) {
     const sunrise = weather.current.sys.sunrise
     const sunset = weather.current.sys.sunset
     isNight = now < sunrise || now > sunset
-    todayForecast = buildTodayForecast(weather.forecast, timezoneOffset)
-    outlookData = buildOutlookData(weather.forecast, timezoneOffset)
+    todayForecast = buildTodayForecast(weather.forecast, timezoneOffset, timeFormat, tempUnit)
+    outlookData = buildOutlookData(weather.forecast, timezoneOffset, tempUnit)
 
-    // Get today's high and low from the forecast
-    const todayTemps = weather.forecast
-      .filter(item => getDayName(item.dt, timezoneOffset) === 'Today')
-      .map(item => item.main.temp)
-
-    if (todayTemps.length > 0) {
-      todayHigh = Math.round(Math.max(...todayTemps))
-      todayLow = Math.round(Math.min(...todayTemps))
-    }
+    // Get today's high and low from the current weather endpoint
+    todayHigh = convertTemp(weather.current.main.temp_max, tempUnit)
+    todayLow = convertTemp(weather.current.main.temp_min, tempUnit)
 
     nextChange = getNextChange(
       weather.current.weather[0].id,
       weather.forecast,
-      timezoneOffset
+      timezoneOffset,
+      timeFormat,
+      tempUnit
     )
   }
+
+  // Derived display values
+  const displayTemp = weather ? convertTemp(weather.current.main.temp, tempUnit) : null
+  const displayFeelsLike = weather ? convertTemp(weather.current.main.feels_like, tempUnit) : null
+  const displayWind = weather ? convertWind(weather.current.wind.speed, windUnit) : null
+  const displayWindUnit = getWindUnit(windUnit)
+  const displayTempUnit = getTempUnit(tempUnit)
+  const rainLastHour = weather?.current.rain?.['1h']
 
   return (
     <div className="home">
@@ -323,11 +355,11 @@ function Home({ setPage }) {
               <div className="conditions-card welcome-card-dark">
                 <div className="conditions-top">
                   <div className="conditions-temp">
-                    <span className="conditions-temp-value">{Math.round(weather.current.main.temp)}°</span>
+                    <span className="conditions-temp-value">{displayTemp}°</span>
                     <span className="conditions-desc" style={{ textTransform: 'capitalize' }}>
                       {weather.current.weather[0].description}
                     </span>
-                    <span className="conditions-feels-like">Feels like {Math.round(weather.current.main.feels_like)}°</span>
+                    <span className="conditions-feels-like">Feels like {displayFeelsLike}°</span>
                     {todayHigh !== null && (
                       <span className="conditions-high-low">H: {todayHigh}° · L: {todayLow}°</span>
                     )}
@@ -377,7 +409,7 @@ function Home({ setPage }) {
                       <AirIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
                       <span className="today-condition-label">WIND</span>
                     </div>
-                    <p className="today-condition-value">{Math.round(weather.current.wind.speed * 3.6)} <span className="today-condition-unit">km/h</span></p>
+                    <p className="today-condition-value">{displayWind} <span className="today-condition-unit">{displayWindUnit}</span></p>
                     <p className="today-condition-sub">From the {getWindDirection(weather.current.wind.deg)}</p>
                   </div>
                   <div className="today-condition-stat">
@@ -387,7 +419,7 @@ function Home({ setPage }) {
                     </div>
                     <p className="today-condition-value">{Math.round((weather.forecast[0]?.pop || 0) * 100)} <span className="today-condition-unit">%</span></p>
                     <p className="today-condition-sub">
-                      {weather.current.rain?.['1h'] ? `${weather.current.rain['1h']} mm in 1 hr` : '0 mm in 1 hr'}
+                      {rainLastHour ? `${rainLastHour} mm in 1 hr` : '0 mm in 1 hr'}
                     </p>
                   </div>
                   <div className="today-condition-stat">
@@ -428,14 +460,14 @@ function Home({ setPage }) {
                     <WbSunnyIcon style={{ fontSize: 20, color: '#E8C870' }} />
                     <div>
                       <p className="today-condition-label">SUNRISE</p>
-                      <p className="today-condition-sun-time">{formatTime(weather.current.sys.sunrise, weather.current.timezone)}</p>
+                      <p className="today-condition-sun-time">{formatTime(weather.current.sys.sunrise, weather.current.timezone, timeFormat)}</p>
                     </div>
                   </div>
                   <div className="today-conditions-sun-item">
                     <NightsStayIcon style={{ fontSize: 20, color: '#6B7E8F' }} />
                     <div>
                       <p className="today-condition-label">SUNSET</p>
-                      <p className="today-condition-sun-time">{formatTime(weather.current.sys.sunset, weather.current.timezone)}</p>
+                      <p className="today-condition-sun-time">{formatTime(weather.current.sys.sunset, weather.current.timezone, timeFormat)}</p>
                     </div>
                   </div>
                 </div>
@@ -480,11 +512,11 @@ function Home({ setPage }) {
               <div className="conditions-card welcome-card-dark">
                 <div className="conditions-top">
                   <div className="conditions-temp">
-                    <span className="conditions-temp-value">{Math.round(weather.current.main.temp)}°</span>
+                    <span className="conditions-temp-value">{displayTemp}°</span>
                     <span className="conditions-desc" style={{ textTransform: 'capitalize' }}>
                       {weather.current.weather[0].description}
                     </span>
-                    <span className="conditions-feels-like">Feels like {Math.round(weather.current.main.feels_like)}°</span>
+                    <span className="conditions-feels-like">Feels like {displayFeelsLike}°</span>
                     {todayHigh !== null && (
                       <span className="conditions-high-low">H: {todayHigh}° · L: {todayLow}°</span>
                     )}
@@ -503,7 +535,7 @@ function Home({ setPage }) {
                       <AirIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
                       <span className="today-condition-label">WIND</span>
                     </div>
-                    <p className="today-condition-value">{Math.round(weather.current.wind.speed * 3.6)} <span className="today-condition-unit">km/h</span></p>
+                    <p className="today-condition-value">{displayWind} <span className="today-condition-unit">{displayWindUnit}</span></p>
                     <p className="today-condition-sub">From the {getWindDirection(weather.current.wind.deg)}</p>
                   </div>
                   <div className="today-condition-stat">
@@ -513,7 +545,7 @@ function Home({ setPage }) {
                     </div>
                     <p className="today-condition-value">{Math.round((weather.forecast[0]?.pop || 0) * 100)} <span className="today-condition-unit">%</span></p>
                     <p className="today-condition-sub">
-                      {weather.current.rain?.['1h'] ? `${weather.current.rain['1h']} mm in 1 hr` : '0 mm in 1 hr'}
+                      {rainLastHour ? `${rainLastHour} mm in 1 hr` : '0 mm in 1 hr'}
                     </p>
                   </div>
                   <div className="today-condition-stat">
@@ -554,14 +586,14 @@ function Home({ setPage }) {
                     <WbSunnyIcon style={{ fontSize: 20, color: '#E8C870' }} />
                     <div>
                       <p className="today-condition-label">SUNRISE</p>
-                      <p className="today-condition-sun-time">{formatTime(weather.current.sys.sunrise, weather.current.timezone)}</p>
+                      <p className="today-condition-sun-time">{formatTime(weather.current.sys.sunrise, weather.current.timezone, timeFormat)}</p>
                     </div>
                   </div>
                   <div className="today-conditions-sun-item">
                     <NightsStayIcon style={{ fontSize: 20, color: '#6B7E8F' }} />
                     <div>
                       <p className="today-condition-label">SUNSET</p>
-                      <p className="today-condition-sun-time">{formatTime(weather.current.sys.sunset, weather.current.timezone)}</p>
+                      <p className="today-condition-sun-time">{formatTime(weather.current.sys.sunset, weather.current.timezone, timeFormat)}</p>
                     </div>
                   </div>
                 </div>
