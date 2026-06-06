@@ -148,6 +148,60 @@ function getCloudLabel(percent) {
   return 'Overcast'
 }
 
+function getWeatherCategory(weatherCode) {
+  if (weatherCode >= 200 && weatherCode < 300) return 'storm'
+  if (weatherCode >= 300 && weatherCode < 600) return 'rain'
+  if (weatherCode >= 600 && weatherCode < 700) return 'snow'
+  if (weatherCode >= 700 && weatherCode < 800) return 'fog'
+  if (weatherCode === 800) return 'clear'
+  return 'cloudy'
+}
+
+function getChangeHeadline(category, time) {
+  if (category === 'clear') return `Clearing by ${time}`
+  if (category === 'rain') return `Rain moving in by ${time}`
+  if (category === 'storm') return `Storms expected by ${time}`
+  if (category === 'snow') return `Snow arriving by ${time}`
+  if (category === 'fog') return `Fog rolling in by ${time}`
+  return `Clouding over by ${time}`
+}
+
+function getChangeDescription(fromCategory, toCategory, temp, time) {
+  if (toCategory === 'clear') return `Conditions improving through the morning, with a high of ${temp}° expected around ${time}.`
+  if (toCategory === 'rain') return `Rain expected to move in around ${time}, with temperatures around ${temp}°.`
+  if (toCategory === 'storm') return `Storms likely to develop around ${time}. Temperatures around ${temp}°.`
+  if (toCategory === 'snow') return `Snow expected to arrive around ${time}. Temperatures dropping to ${temp}°.`
+  if (toCategory === 'cloudy') return `Clouds building through the morning, with temperatures around ${temp}° by ${time}.`
+  return `Conditions changing around ${time}, with temperatures around ${temp}°.`
+}
+
+function getNextChange(currentWeatherCode, forecastList, timezoneOffset) {
+  const currentCategory = getWeatherCategory(currentWeatherCode)
+  const now = Date.now() / 1000
+  const upcoming = forecastList.filter(item => item.dt >= now)
+
+  for (const item of upcoming) {
+    const hoursAway = (item.dt - now) / 3600
+    if (hoursAway > 24) break
+    const itemCategory = getWeatherCategory(item.weather[0].id)
+    if (itemCategory !== currentCategory) {
+      const time = formatTime(item.dt, timezoneOffset)
+      const temp = Math.round(item.main.temp)
+      const rainChance = Math.round((item.pop || 0) * 100)
+      return {
+        headline: getChangeHeadline(itemCategory, time),
+        description: getChangeDescription(currentCategory, itemCategory, temp, time),
+        hoursAway: Math.round(hoursAway),
+        temp,
+        time,
+        rainChance,
+      }
+    }
+  }
+
+  return null
+}
+
 function Home({ setPage }) {
   const { location, setLocation } = usePreferences()
   const { weather, loading, error, fetchWeather } = useWeather()
@@ -169,6 +223,7 @@ function Home({ setPage }) {
   let isNight = false
   let todayHigh = null
   let todayLow = null
+  let nextChange = null
 
   if (weather) {
     const timezoneOffset = weather.current.timezone
@@ -188,6 +243,12 @@ function Home({ setPage }) {
       todayHigh = Math.round(Math.max(...todayTemps))
       todayLow = Math.round(Math.min(...todayTemps))
     }
+
+    nextChange = getNextChange(
+      weather.current.weather[0].id,
+      weather.forecast,
+      timezoneOffset
+    )
   }
 
   return (
@@ -210,14 +271,12 @@ function Home({ setPage }) {
             <SearchIcon style={{ fontSize: 18, color: 'var(--text-muted)' }} />
             <span>Search a city</span>
           </button>
-
           <button
             className="home-nav-icon-btn mobile-search"
             onClick={() => setShowLocationPicker(!showLocationPicker)}
           >
             <SearchIcon style={{ fontSize: 20, color: 'var(--dark-navy)' }} />
           </button>
-
           <button
             className="home-nav-icon-btn"
             onClick={() => setPage('settings')}
@@ -258,6 +317,164 @@ function Home({ setPage }) {
 
         {!loading && weather && (
           <>
+            {/* Mobile: single column, cards in order */}
+            <div className="home-col-mobile">
+
+              <div className="conditions-card welcome-card-dark">
+                <div className="conditions-top">
+                  <div className="conditions-temp">
+                    <span className="conditions-temp-value">{Math.round(weather.current.main.temp)}°</span>
+                    <span className="conditions-desc" style={{ textTransform: 'capitalize' }}>
+                      {weather.current.weather[0].description}
+                    </span>
+                    <span className="conditions-feels-like">Feels like {Math.round(weather.current.main.feels_like)}°</span>
+                    {todayHigh !== null && (
+                      <span className="conditions-high-low">H: {todayHigh}° · L: {todayLow}°</span>
+                    )}
+                  </div>
+                  <div className="conditions-weather">
+                    {getWeatherIcon(weather.current.weather[0].id, 48, isNight)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="next-change-card welcome-card-dark">
+                <p className="next-change-label">NEXT CHANGE</p>
+                {nextChange ? (
+                  <>
+                    <p className="next-change-headline">{nextChange.headline}</p>
+                    <p className="next-change-desc">{nextChange.description}</p>
+                    <div className="next-change-stats">
+                      <div className="next-change-stat">
+                        <p className="next-change-stat-label">IN</p>
+                        <p className="next-change-stat-value">~{nextChange.hoursAway} hrs</p>
+                      </div>
+                      <div className="next-change-stat">
+                        <p className="next-change-stat-label">THEN</p>
+                        <p className="next-change-stat-value">{nextChange.temp}° at {nextChange.time}</p>
+                      </div>
+                      <div className="next-change-stat">
+                        <p className="next-change-stat-label">RAIN CHANCE</p>
+                        <p className="next-change-stat-value">{nextChange.rainChance}%</p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="next-change-headline">Conditions holding steady</p>
+                    <p className="next-change-desc" style={{ textTransform: 'capitalize' }}>
+                      {weather.current.weather[0].description} expected to continue through the day.
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <div className="today-conditions-card welcome-card-dark">
+                <p className="today-conditions-title">Today's conditions</p>
+                <div className="today-conditions-grid">
+                  <div className="today-condition-stat">
+                    <div className="today-condition-header">
+                      <AirIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
+                      <span className="today-condition-label">WIND</span>
+                    </div>
+                    <p className="today-condition-value">{Math.round(weather.current.wind.speed * 3.6)} <span className="today-condition-unit">km/h</span></p>
+                    <p className="today-condition-sub">From the {getWindDirection(weather.current.wind.deg)}</p>
+                  </div>
+                  <div className="today-condition-stat">
+                    <div className="today-condition-header">
+                      <WaterDropIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
+                      <span className="today-condition-label">RAIN</span>
+                    </div>
+                    <p className="today-condition-value">{Math.round((weather.forecast[0]?.pop || 0) * 100)} <span className="today-condition-unit">%</span></p>
+                    <p className="today-condition-sub">
+                      {weather.current.rain?.['1h'] ? `${weather.current.rain['1h']} mm in 1 hr` : '0 mm in 1 hr'}
+                    </p>
+                  </div>
+                  <div className="today-condition-stat">
+                    <div className="today-condition-header">
+                      <OpacityIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
+                      <span className="today-condition-label">HUMIDITY</span>
+                    </div>
+                    <p className="today-condition-value">{weather.current.main.humidity} <span className="today-condition-unit">%</span></p>
+                    <p className="today-condition-sub">{getHumidityLabel(weather.current.main.humidity)}</p>
+                  </div>
+                  <div className="today-condition-stat">
+                    <div className="today-condition-header">
+                      <CloudIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
+                      <span className="today-condition-label">CLOUD COVER</span>
+                    </div>
+                    <p className="today-condition-value">{weather.current.clouds.all} <span className="today-condition-unit">%</span></p>
+                    <p className="today-condition-sub">{getCloudLabel(weather.current.clouds.all)}</p>
+                  </div>
+                  <div className="today-condition-stat">
+                    <div className="today-condition-header">
+                      <CompressIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
+                      <span className="today-condition-label">PRESSURE</span>
+                    </div>
+                    <p className="today-condition-value">{weather.current.main.pressure} <span className="today-condition-unit">hPa</span></p>
+                    <p className="today-condition-sub">Steady</p>
+                  </div>
+                  <div className="today-condition-stat">
+                    <div className="today-condition-header">
+                      <VisibilityIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
+                      <span className="today-condition-label">VISIBILITY</span>
+                    </div>
+                    <p className="today-condition-value">{Math.round((weather.current.visibility || 10000) / 1000)} <span className="today-condition-unit">km</span></p>
+                    <p className="today-condition-sub">{getVisibilityLabel(weather.current.visibility || 10000)}</p>
+                  </div>
+                </div>
+                <div className="today-conditions-sun">
+                  <div className="today-conditions-sun-item">
+                    <WbSunnyIcon style={{ fontSize: 20, color: '#E8C870' }} />
+                    <div>
+                      <p className="today-condition-label">SUNRISE</p>
+                      <p className="today-condition-sun-time">{formatTime(weather.current.sys.sunrise, weather.current.timezone)}</p>
+                    </div>
+                  </div>
+                  <div className="today-conditions-sun-item">
+                    <NightsStayIcon style={{ fontSize: 20, color: '#6B7E8F' }} />
+                    <div>
+                      <p className="today-condition-label">SUNSET</p>
+                      <p className="today-condition-sun-time">{formatTime(weather.current.sys.sunset, weather.current.timezone)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="forecast-card welcome-card-dark">
+                <p className="forecast-title">Next 24 hours</p>
+                <div className="forecast-scroll">
+                  {todayForecast.map((item, i) => (
+                    <div key={i} className="forecast-item">
+                      <span className="forecast-time">{item.time}</span>
+                      {getWeatherIcon(item.weatherCode, 24)}
+                      <span className="forecast-temp">{item.temp}°</span>
+                      <span className="forecast-rain">{item.rain}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="outlook-card welcome-card-dark">
+                <p className="outlook-title">5-day forecast</p>
+                <div className="outlook-list">
+                  {outlookData.map((item) => (
+                    <div key={item.day} className="outlook-row">
+                      <span className="outlook-day">{item.day}</span>
+                      {getWeatherIcon(item.weatherCode, 20)}
+                      <span className="outlook-low">{item.low}°</span>
+                      <div className="outlook-bar-track">
+                        <div style={getOutlookBarStyle(item.low, item.high, outlookData)} />
+                      </div>
+                      <span className="outlook-high">{item.high}°</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Desktop col 1: conditions + today's conditions */}
             <div className="home-col-left">
 
               <div className="conditions-card welcome-card-dark">
@@ -281,7 +498,6 @@ function Home({ setPage }) {
               <div className="today-conditions-card welcome-card-dark">
                 <p className="today-conditions-title">Today's conditions</p>
                 <div className="today-conditions-grid">
-
                   <div className="today-condition-stat">
                     <div className="today-condition-header">
                       <AirIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
@@ -290,7 +506,6 @@ function Home({ setPage }) {
                     <p className="today-condition-value">{Math.round(weather.current.wind.speed * 3.6)} <span className="today-condition-unit">km/h</span></p>
                     <p className="today-condition-sub">From the {getWindDirection(weather.current.wind.deg)}</p>
                   </div>
-
                   <div className="today-condition-stat">
                     <div className="today-condition-header">
                       <WaterDropIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
@@ -301,7 +516,6 @@ function Home({ setPage }) {
                       {weather.current.rain?.['1h'] ? `${weather.current.rain['1h']} mm in 1 hr` : '0 mm in 1 hr'}
                     </p>
                   </div>
-
                   <div className="today-condition-stat">
                     <div className="today-condition-header">
                       <OpacityIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
@@ -310,7 +524,6 @@ function Home({ setPage }) {
                     <p className="today-condition-value">{weather.current.main.humidity} <span className="today-condition-unit">%</span></p>
                     <p className="today-condition-sub">{getHumidityLabel(weather.current.main.humidity)}</p>
                   </div>
-
                   <div className="today-condition-stat">
                     <div className="today-condition-header">
                       <CloudIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
@@ -319,7 +532,6 @@ function Home({ setPage }) {
                     <p className="today-condition-value">{weather.current.clouds.all} <span className="today-condition-unit">%</span></p>
                     <p className="today-condition-sub">{getCloudLabel(weather.current.clouds.all)}</p>
                   </div>
-
                   <div className="today-condition-stat">
                     <div className="today-condition-header">
                       <CompressIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
@@ -328,7 +540,6 @@ function Home({ setPage }) {
                     <p className="today-condition-value">{weather.current.main.pressure} <span className="today-condition-unit">hPa</span></p>
                     <p className="today-condition-sub">Steady</p>
                   </div>
-
                   <div className="today-condition-stat">
                     <div className="today-condition-header">
                       <VisibilityIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
@@ -337,10 +548,7 @@ function Home({ setPage }) {
                     <p className="today-condition-value">{Math.round((weather.current.visibility || 10000) / 1000)} <span className="today-condition-unit">km</span></p>
                     <p className="today-condition-sub">{getVisibilityLabel(weather.current.visibility || 10000)}</p>
                   </div>
-
                 </div>
-
-                {/* Sunrise and sunset at the bottom of the conditions card */}
                 <div className="today-conditions-sun">
                   <div className="today-conditions-sun-item">
                     <WbSunnyIcon style={{ fontSize: 20, color: '#E8C870' }} />
@@ -357,12 +565,44 @@ function Home({ setPage }) {
                     </div>
                   </div>
                 </div>
-
               </div>
 
             </div>
 
+            {/* Desktop col 2: next change + next 24 hrs + 5-day */}
             <div className="home-col-center">
+
+              <div className="next-change-card welcome-card-dark">
+                <p className="next-change-label">NEXT CHANGE</p>
+                {nextChange ? (
+                  <>
+                    <p className="next-change-headline">{nextChange.headline}</p>
+                    <p className="next-change-desc">{nextChange.description}</p>
+                    <div className="next-change-stats">
+                      <div className="next-change-stat">
+                        <p className="next-change-stat-label">IN</p>
+                        <p className="next-change-stat-value">~{nextChange.hoursAway} hrs</p>
+                      </div>
+                      <div className="next-change-stat">
+                        <p className="next-change-stat-label">THEN</p>
+                        <p className="next-change-stat-value">{nextChange.temp}° at {nextChange.time}</p>
+                      </div>
+                      <div className="next-change-stat">
+                        <p className="next-change-stat-label">RAIN CHANCE</p>
+                        <p className="next-change-stat-value">{nextChange.rainChance}%</p>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="next-change-headline">Conditions holding steady</p>
+                    <p className="next-change-desc" style={{ textTransform: 'capitalize' }}>
+                      {weather.current.weather[0].description} expected to continue through the day.
+                    </p>
+                  </>
+                )}
+              </div>
+
               <div className="forecast-card welcome-card-dark">
                 <p className="forecast-title">Next 24 hours</p>
                 <div className="forecast-scroll">
@@ -376,9 +616,7 @@ function Home({ setPage }) {
                   ))}
                 </div>
               </div>
-            </div>
 
-            <div className="home-col-right">
               <div className="outlook-card welcome-card-dark">
                 <p className="outlook-title">5-day forecast</p>
                 <div className="outlook-list">
@@ -395,7 +633,9 @@ function Home({ setPage }) {
                   ))}
                 </div>
               </div>
+
             </div>
+
           </>
         )}
 
