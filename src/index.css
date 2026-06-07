@@ -1142,6 +1142,15 @@ button {
   padding: var(--s3) var(--s2);
 }
 
+.settings-desktop-left,
+.settings-desktop-right { display: none; }
+
+.settings-mobile-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
 /* Section */
 
 .settings-section {
@@ -1236,7 +1245,7 @@ button {
   align-items: center;
   gap: var(--s1);
   width: 100%;
-  padding: var(--s2) var(--s2);
+  padding: var(--s2);
   font-size: 14px;
   color: var(--dark-navy);
   text-align: left;
@@ -1356,21 +1365,29 @@ button {
 
   .settings-body {
     flex: 1;
-    display: grid;
-    grid-template-columns: 1fr 1.4fr;
+    display: flex;
+    flex-direction: row;
     gap: var(--s3);
     padding: var(--s3) var(--s4);
     max-width: 1100px;
     margin: 0 auto;
     width: 100%;
-    align-items: stretch;
+    align-items: start;
   }
 
-  /* Left column */
-  .settings-col-left {
+  .settings-mobile-col { display: none; }
+
+  .settings-desktop-left {
     display: flex;
     flex-direction: column;
     gap: var(--s2);
+    flex: 1;
+  }
+
+  .settings-desktop-right {
+    display: flex;
+    flex-direction: column;
+    flex: 1.4;
   }
 
   .settings-section-label {

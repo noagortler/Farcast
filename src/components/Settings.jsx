@@ -61,6 +61,76 @@ function ToggleGroup({ options, value, onChange }) {
   )
 }
 
+function LocationCard({ location, showLocationPicker, setShowLocationPicker, handleLocationSelect }) {
+  return (
+    <div className="settings-section">
+      <p className="settings-section-label">LOCATION</p>
+      <div className="settings-card welcome-card-dark">
+
+        {location && (
+          <div className="settings-location-row">
+            <div className="settings-location-icon">
+              <LocationOnIcon style={{ fontSize: 20, color: 'var(--text-muted)' }} />
+            </div>
+            <div className="settings-location-info">
+              <p className="settings-location-city">{location.city}</p>
+              <p className="settings-location-region">{getRegionLabel(location)}</p>
+            </div>
+          </div>
+        )}
+
+        <button
+          className="settings-change-location-btn"
+          onClick={() => setShowLocationPicker(!showLocationPicker)}
+        >
+          <SearchIcon style={{ fontSize: 18 }} />
+          <span>Change default location</span>
+        </button>
+
+        {showLocationPicker && (
+          <div className="settings-location-dropdown">
+            {LOCATIONS.map(loc => (
+              <button
+                key={loc.city}
+                className={`settings-location-item${location?.city === loc.city ? ' settings-location-item-active' : ''}`}
+                onClick={() => handleLocationSelect(loc)}
+              >
+                <LocationOnIcon style={{ fontSize: 14 }} />
+                <span>{loc.city}, {loc.region}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
+      </div>
+    </div>
+  )
+}
+
+function AboutCard({ weather }) {
+  return (
+    <div className="settings-section">
+      <p className="settings-section-label">ABOUT</p>
+      <div className="settings-card welcome-card-dark">
+        <div className="settings-about-row">
+          <span className="settings-about-label">Data source</span>
+          <span className="settings-about-value">OpenWeather API</span>
+        </div>
+        <div className="settings-about-divider" />
+        <div className="settings-about-row">
+          <span className="settings-about-label">Last updated</span>
+          <span className="settings-about-value">{getRelativeTime(weather?.fetchedAt)}</span>
+        </div>
+        <div className="settings-about-divider" />
+        <div className="settings-about-row">
+          <span className="settings-about-label">Version</span>
+          <span className="settings-about-value">0.0.0</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Settings({ setPage }) {
   const {
     location, setLocation,
@@ -90,130 +160,141 @@ function Settings({ setPage }) {
 
       <div className="settings-body">
 
-        {/* Left column: location + about */}
-        <div className="settings-col-left">
+        {/* Mobile: location, display prefs, about */}
+        {/* Display preferences is duplicated below for desktop layout */}
+        <div className="settings-mobile-col">
+          <LocationCard
+            location={location}
+            showLocationPicker={showLocationPicker}
+            setShowLocationPicker={setShowLocationPicker}
+            handleLocationSelect={handleLocationSelect}
+          />
 
-          {/* Location */}
+          {/* Display Preferences */}
           <div className="settings-section">
-            <p className="settings-section-label">LOCATION</p>
+            <p className="settings-section-label">DISPLAY PREFERENCES</p>
             <div className="settings-card welcome-card-dark">
 
-              {location && (
-                <div className="settings-location-row">
-                  <div className="settings-location-icon">
-                    <LocationOnIcon style={{ fontSize: 20, color: 'var(--text-muted)' }} />
-                  </div>
-                  <div className="settings-location-info">
-                    <p className="settings-location-city">{location.city}</p>
-                    <p className="settings-location-region">{getRegionLabel(location)}</p>
-                  </div>
+              <div className="settings-pref-row">
+                <div className="settings-pref-header">
+                  <p className="settings-pref-label">Temperature</p>
+                  <p className="settings-pref-hint">Used everywhere temperatures appear</p>
                 </div>
-              )}
+                <ToggleGroup
+                  value={tempUnit}
+                  onChange={setTempUnit}
+                  options={[
+                    { label: 'Celsius °C', value: 'C' },
+                    { label: 'Fahrenheit °F', value: 'F' },
+                  ]}
+                />
+              </div>
 
-              <button
-                className="settings-change-location-btn"
-                onClick={() => setShowLocationPicker(!showLocationPicker)}
-              >
-                <SearchIcon style={{ fontSize: 18 }} />
-                <span>Change default location</span>
-              </button>
+              <div className="settings-pref-divider" />
 
-              {showLocationPicker && (
-                <div className="settings-location-dropdown">
-                  {LOCATIONS.map(loc => (
-                    <button
-                      key={loc.city}
-                      className={`settings-location-item${location?.city === loc.city ? ' settings-location-item-active' : ''}`}
-                      onClick={() => handleLocationSelect(loc)}
-                    >
-                      <LocationOnIcon style={{ fontSize: 14 }} />
-                      <span>{loc.city}, {loc.region}</span>
-                    </button>
-                  ))}
+              <div className="settings-pref-row">
+                <div className="settings-pref-header">
+                  <p className="settings-pref-label">Wind speed</p>
+                  <p className="settings-pref-hint">Affects today's conditions card</p>
                 </div>
-              )}
+                <ToggleGroup
+                  value={windUnit}
+                  onChange={setWindUnit}
+                  options={[
+                    { label: 'km/h', value: 'kmh' },
+                    { label: 'mph', value: 'mph' },
+                  ]}
+                />
+              </div>
+
+              <div className="settings-pref-divider" />
+
+              <div className="settings-pref-row">
+                <div className="settings-pref-header">
+                  <p className="settings-pref-label">Time format</p>
+                </div>
+                <ToggleGroup
+                  value={timeFormat}
+                  onChange={setTimeFormat}
+                  options={[
+                    { label: '12-hour', value: '12h' },
+                    { label: '24-hour', value: '24h' },
+                  ]}
+                />
+              </div>
 
             </div>
           </div>
 
-          {/* About */}
-          <div className="settings-section">
-            <p className="settings-section-label">ABOUT</p>
-            <div className="settings-card welcome-card-dark">
-
-              <div className="settings-about-row">
-                <span className="settings-about-label">Data source</span>
-                <span className="settings-about-value">OpenWeather API</span>
-              </div>
-              <div className="settings-about-divider" />
-              <div className="settings-about-row">
-                <span className="settings-about-label">Last updated</span>
-                <span className="settings-about-value">{getRelativeTime(weather?.fetchedAt)}</span>
-              </div>
-              <div className="settings-about-divider" />
-              <div className="settings-about-row">
-                <span className="settings-about-label">Version</span>
-                <span className="settings-about-value">0.0.0</span>
-              </div>
-
-            </div>
-          </div>
-
+          <AboutCard weather={weather} />
         </div>
 
-        {/* Right Column - Display Preferences */}
-        <div className="settings-section">
-          <p className="settings-section-label">DISPLAY PREFERENCES</p>
-          <div className="settings-card welcome-card-dark">
+        {/* Desktop left column: location + about */}
+        <div className="settings-desktop-left">
+          <LocationCard
+            location={location}
+            showLocationPicker={showLocationPicker}
+            setShowLocationPicker={setShowLocationPicker}
+            handleLocationSelect={handleLocationSelect}
+          />
+          <AboutCard weather={weather} />
+        </div>
 
-            <div className="settings-pref-row">
-              <div className="settings-pref-header">
-                <p className="settings-pref-label">Temperature</p>
-                <p className="settings-pref-hint">Used everywhere temperatures appear</p>
+        {/* Desktop right column: display preferences */}
+        <div className="settings-desktop-right">
+          <div className="settings-section">
+            <p className="settings-section-label">DISPLAY PREFERENCES</p>
+            <div className="settings-card welcome-card-dark">
+
+              <div className="settings-pref-row">
+                <div className="settings-pref-header">
+                  <p className="settings-pref-label">Temperature</p>
+                  <p className="settings-pref-hint">Used everywhere temperatures appear</p>
+                </div>
+                <ToggleGroup
+                  value={tempUnit}
+                  onChange={setTempUnit}
+                  options={[
+                    { label: 'Celsius °C', value: 'C' },
+                    { label: 'Fahrenheit °F', value: 'F' },
+                  ]}
+                />
               </div>
-              <ToggleGroup
-                value={tempUnit}
-                onChange={setTempUnit}
-                options={[
-                  { label: 'Celsius °C', value: 'C' },
-                  { label: 'Fahrenheit °F', value: 'F' },
-                ]}
-              />
-            </div>
 
-            <div className="settings-pref-divider" />
+              <div className="settings-pref-divider" />
 
-            <div className="settings-pref-row">
-              <div className="settings-pref-header">
-                <p className="settings-pref-label">Wind speed</p>
-                <p className="settings-pref-hint">Affects today's conditions card</p>
+              <div className="settings-pref-row">
+                <div className="settings-pref-header">
+                  <p className="settings-pref-label">Wind speed</p>
+                  <p className="settings-pref-hint">Affects today's conditions card</p>
+                </div>
+                <ToggleGroup
+                  value={windUnit}
+                  onChange={setWindUnit}
+                  options={[
+                    { label: 'km/h', value: 'kmh' },
+                    { label: 'mph', value: 'mph' },
+                  ]}
+                />
               </div>
-              <ToggleGroup
-                value={windUnit}
-                onChange={setWindUnit}
-                options={[
-                  { label: 'km/h', value: 'kmh' },
-                  { label: 'mph', value: 'mph' },
-                ]}
-              />
-            </div>
 
-            <div className="settings-pref-divider" />
+              <div className="settings-pref-divider" />
 
-            <div className="settings-pref-row">
-              <div className="settings-pref-header">
-                <p className="settings-pref-label">Time format</p>
+              <div className="settings-pref-row">
+                <div className="settings-pref-header">
+                  <p className="settings-pref-label">Time format</p>
+                </div>
+                <ToggleGroup
+                  value={timeFormat}
+                  onChange={setTimeFormat}
+                  options={[
+                    { label: '12-hour', value: '12h' },
+                    { label: '24-hour', value: '24h' },
+                  ]}
+                />
               </div>
-              <ToggleGroup
-                value={timeFormat}
-                onChange={setTimeFormat}
-                options={[
-                  { label: '12-hour', value: '12h' },
-                  { label: '24-hour', value: '24h' },
-                ]}
-              />
-            </div>
 
+            </div>
           </div>
         </div>
 
