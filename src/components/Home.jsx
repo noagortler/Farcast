@@ -134,18 +134,35 @@ function buildTodayForecast(forecastList, timezoneOffset, timeFormat, tempUnit) 
 function buildOutlookData(forecastList, timezoneOffset, tempUnit) {
   const days = {}
   forecastList.forEach(item => {
-    const day = getDayName(item.dt, timezoneOffset)
-    if (!days[day]) {
-      days[day] = { temps: [], weatherCode: item.weather[0].id }
+    const localMs = item.dt * 1000 + timezoneOffset * 1000
+    const date = new Date(localMs)
+    const y = date.getUTCFullYear()
+    const m = date.getUTCMonth()
+    const d = date.getUTCDate()
+    const dateKey = `${y}-${m}-${d}`
+    if (!days[dateKey]) {
+      days[dateKey] = { y, m, d, temps: [], weatherCode: item.weather[0].id }
     }
-    days[day].temps.push(item.main.temp)
+    days[dateKey].temps.push(item.main.temp)
   })
-  return Object.entries(days).slice(0, 5).map(([day, data]) => ({
-    day,
-    low: convertTemp(Math.min(...data.temps), tempUnit),
-    high: convertTemp(Math.max(...data.temps), tempUnit),
-    weatherCode: data.weatherCode
-  }))
+
+  const todayLocalMs = Date.now() + timezoneOffset * 1000
+  const todayDate = new Date(todayLocalMs)
+  const ty = todayDate.getUTCFullYear()
+  const tm = todayDate.getUTCMonth()
+  const td = todayDate.getUTCDate()
+
+  return Object.values(days).slice(0, 5).map(data => {
+    const isToday = data.y === ty && data.m === tm && data.d === td
+    const labelDate = new Date(Date.UTC(data.y, data.m, data.d))
+    const label = isToday ? 'Today' : labelDate.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })
+    return {
+      day: label,
+      low: convertTemp(Math.min(...data.temps), tempUnit),
+      high: convertTemp(Math.max(...data.temps), tempUnit),
+      weatherCode: data.weatherCode
+    }
+  })
 }
 
 function getWindDirection(degrees) {
