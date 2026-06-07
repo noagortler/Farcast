@@ -1,5 +1,11 @@
+// React
 import { useState } from 'react'
+
+// Context
 import { usePreferences } from '../context/PreferencesContext'
+
+// Icons
+import LocationOnIcon from '@mui/icons-material/LocationOn'
 
 const LOCATIONS = [
   { city: 'North Vancouver', region: 'BC', country: 'CA', lat: 49.3198, lon: -123.0724 },
@@ -16,18 +22,35 @@ const LOCATIONS = [
   { city: 'Portland', region: 'OR', country: 'US', lat: 45.5051, lon: -122.6750 },
 ]
 
+function ToggleGroup({ options, value, onChange }) {
+  return (
+    <div className="toggle-group">
+      {options.map(opt => (
+        <button
+          key={opt.value}
+          className={`toggle-option${value === opt.value ? ' toggle-option-active' : ''}`}
+          onClick={() => onChange(opt.value)}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function Onboarding({ setPage }) {
-  const { setLocation } = usePreferences()
+  const {
+    setLocation,
+    tempUnit, setTempUnit,
+    windUnit, setWindUnit,
+    timeFormat, setTimeFormat,
+  } = usePreferences()
+
   const [selectedLocation, setSelectedLocation] = useState(null)
   const [error, setError] = useState(false)
 
-  function handleLocationChange(e) {
-    const index = e.target.value
-    if (index === '') {
-      setSelectedLocation(null)
-    } else {
-      setSelectedLocation(LOCATIONS[index])
-    }
+  function handleLocationSelect(loc) {
+    setSelectedLocation(loc)
     setError(false)
   }
 
@@ -43,40 +66,90 @@ function Onboarding({ setPage }) {
   return (
     <div className="onboarding">
 
+      {/* Header */}
       <div className="onboarding-header">
-        <h1 className="wordmark"><span className="far">FAR</span><span className="cast">CAST</span></h1>
+        <h1 className="wordmark onboarding-wordmark">
+          <span className="far">FAR</span><span className="cast">CAST</span>
+        </h1>
+        <p className="onboarding-welcome">Welcome.</p>
+        <p className="onboarding-tagline">Let's find your forecast.</p>
       </div>
 
-      <p className="onboarding-instructions">Let's get you set up.</p>
-
+      {/* Cards */}
       <div className="onboarding-cards">
+
+        {/* Location */}
         <div className="onboarding-card welcome-card-dark">
-          <div className="onboarding-card-heading">
-            <div className="step-number step-1">1</div>
-            <h2>Select your location</h2>
-          </div>
-          <select
-            className="location-select"
-            onChange={handleLocationChange}
-            defaultValue=""
-          >
-            <option value="" disabled>Select a city</option>
-            {LOCATIONS.map((loc, index) => (
-              <option key={loc.city} value={index}>
-                {loc.city}, {loc.region}
-              </option>
+          <p className="onboarding-section-label">LOCATION</p>
+
+          <div className="onboarding-location-list">
+            {LOCATIONS.map(loc => (
+              <button
+                key={loc.city}
+                className={`onboarding-location-item${selectedLocation?.city === loc.city ? ' onboarding-location-item-active' : ''}`}
+                onClick={() => handleLocationSelect(loc)}
+              >
+                <LocationOnIcon style={{ fontSize: 14 }} />
+                <span>{loc.city}, {loc.region}</span>
+              </button>
             ))}
-          </select>
-          <p className="location-helper">We'll pull the live forecast from there.</p>
+          </div>
+
+          {error && <p className="onboarding-error">Please select a location to continue.</p>}
         </div>
+
+        {/* Display Preferences */}
+        <div className="onboarding-card welcome-card-dark">
+          <p className="onboarding-section-label">DISPLAY PREFERENCES</p>
+
+          <div className="settings-pref-row">
+            <p className="settings-pref-label">Temperature</p>
+            <ToggleGroup
+              value={tempUnit}
+              onChange={setTempUnit}
+              options={[
+                { label: 'Celsius °C', value: 'C' },
+                { label: 'Fahrenheit °F', value: 'F' },
+              ]}
+            />
+          </div>
+
+          <div className="settings-pref-divider" />
+
+          <div className="settings-pref-row">
+            <p className="settings-pref-label">Wind speed</p>
+            <ToggleGroup
+              value={windUnit}
+              onChange={setWindUnit}
+              options={[
+                { label: 'km/h', value: 'kmh' },
+                { label: 'mph', value: 'mph' },
+              ]}
+            />
+          </div>
+
+          <div className="settings-pref-divider" />
+
+          <div className="settings-pref-row">
+            <p className="settings-pref-label">Time format</p>
+            <ToggleGroup
+              value={timeFormat}
+              onChange={setTimeFormat}
+              options={[
+                { label: '12-hour', value: '12h' },
+                { label: '24-hour', value: '24h' },
+              ]}
+            />
+          </div>
+
+        </div>
+
       </div>
 
-      {error && (
-        <p className="onboarding-error">Please select a location to continue.</p>
-      )}
+      <p className="onboarding-hint">You can adjust your preferences later in Settings.</p>
 
-      <button className="btn-primary" onClick={handleStart}>
-        Start using Farcast
+      <button className="btn-primary onboarding-btn" onClick={handleStart}>
+        Get started
       </button>
 
     </div>
