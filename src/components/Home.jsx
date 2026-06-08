@@ -380,6 +380,9 @@ function Home({ setPage }) {
         {error && !weather && (
           <div className="home-loading-screen">
             <p className="home-error">{error}</p>
+            <button className="home-retry-btn" onClick={() => fetchWeather(location.lat, location.lon)}>
+              Try again
+            </button>
           </div>
         )}
 

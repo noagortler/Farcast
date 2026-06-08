@@ -671,11 +671,13 @@ button {
 
 .home-loading-screen {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
   min-height: 60vh;
   grid-column: 1 / -1;
+  gap: var(--s2);
 }
 
 .home-loading {
@@ -688,6 +690,16 @@ button {
 .home-error {
   font-size: 16px;
   color: var(--dark-navy);
+}
+
+.home-retry-btn {
+  padding: var(--s1) var(--s3);
+  background: var(--dark-navy);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+  font-family: 'DM Sans', sans-serif;
 }
 
 /* Med Screens */

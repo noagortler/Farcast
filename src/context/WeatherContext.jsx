@@ -32,9 +32,11 @@ export function WeatherProvider({ children }) {
 
     try {
       const currentRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${key}`)
+      if (!currentRes.ok) throw new Error('API request failed')
       const current = await currentRes.json()
 
       const forecastRes = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${key}`)
+      if (!forecastRes.ok) throw new Error('API request failed')
       const forecast = await forecastRes.json()
 
       const data = {
@@ -48,7 +50,7 @@ export function WeatherProvider({ children }) {
       setWeatherState(data)
       localStorage.setItem('farcast_weather_data', JSON.stringify(data))
     } catch (err) {
-      setError('Unable to fetch weather data. Please try again.')
+      setError('Unable to fetch weather data.')
     } finally {
       setLoading(false)
     }

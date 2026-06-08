@@ -124,7 +124,7 @@ function AboutCard({ weather }) {
         <div className="settings-about-divider" />
         <div className="settings-about-row">
           <span className="settings-about-label">Version</span>
-          <span className="settings-about-value">0.0.0</span>
+          <span className="settings-about-value">1.0.0</span>
         </div>
       </div>
     </div>

@@ -1,32 +1,62 @@
 # Farcast
 
-Farcast is a mobile-first web app that translates live weather data into a clear, activity-specific comfort score. Instead of showing raw numbers and leaving interpretation to the user, Farcast answers one question directly: **when is my window of opportunity?**
+Farcast is a simple weather app that pulls live forecast data and presents it clearly, with clean design, no accounts needed.
 
-Built for cyclists, hikers, runners, and paddlers.
+Built with React 19 and the OpenWeather API.
 
----
-
-## What it does
-
-- Scores current weather conditions from 0 to 100 based on your selected activity
-- Shows the best window of time for your activity today
-- Breaks down what is affecting your score (temperature, wind, rain)
-- Shows today's forecast in 3-hour intervals with a comfort score for each slot
-- Shows a 5-day outlook with the best score of each day
-- Lets you tune how sensitive you are to wind, rain, and temperature per activity
+**Live demo:** [farcast.onrender.com](https://farcast.onrender.com)
 
 ---
 
-## Tech stack
+## What Farcast Does
 
-- React (Vite)
-- Material UI + MUI Icons
-- OpenWeather API (free tier)
-- localStorage for data persistence
+- Shows current conditions including temperature, feels like, wind, humidity, pressure, visibility, and cloud cover
+- Highlights when the weather is expected to change in the next 24 hours
+- Shows today's forecast in 3-hour intervals
+- Shows a 5-day outlook with daily high and low temperatures
+- Lets you set your preferred units for temperature, wind speed, and time format
+- Saves your location and preferences locally so the app is ready when users return
 
 ---
 
-## Getting started
+## Tech Stack
+
+- React 19 (Vite)
+- MUI Icons (`@mui/icons-material`)
+- OpenWeather API (free tier, current weather + 5-day forecast endpoints)
+- localStorage for preferences and weather data caching
+
+---
+
+## Project Structure
+
+```
+farcast/
+  public/
+    favicon.svg
+  src/
+    components/
+      Home.jsx        # Main weather screen
+      Onboarding.jsx  # First-time setup screen
+      Settings.jsx    # Location and display preferences
+    context/
+      PreferencesContext.jsx  # Stores and persists user preferences
+      WeatherContext.jsx      # Fetches and caches weather data
+    App.jsx       # Page routing
+    main.jsx      # App entry point
+    index.css     # Global styles and design system
+  docs/
+    planning.md   # v2 planning documentation
+    style-guide.md
+  index.html      # App entry point
+  README.md
+  NOTES.md
+
+```
+
+---
+
+## Getting Started
 
 **1. Clone the repo**
 
@@ -44,8 +74,9 @@ npm install
 **3. Add your API key**
 
 Create a `.env` file in the root of the project and add your OpenWeather API key:
+
 ```
-VITE_OPENWEATHER_KEY=api_key_here
+VITE_OPENWEATHER_KEY=your_api_key_here
 ```
 
 You can get a free API key at [openweathermap.org](https://openweathermap.org)
@@ -58,7 +89,6 @@ npm run dev
 
 The app will open at `http://localhost:5173`
 
-
 ---
 
 ## Data
@@ -67,24 +97,58 @@ All user preferences are saved locally in the browser using localStorage. There 
 
 ---
 
-## Locations
+## Error Handling
 
-Farcast currently uses a preset list of locations rather than live location search. Users pick from the list on the onboarding screen and can change it in settings.
+- If the OpenWeather API request fails, the app displays a user-friendly error message on the home screen and does not crash
+- If no weather data is available yet, the app shows a loading state while the request is in progress
+- If a user opens the app without a saved location, they are redirected to the onboarding screen automatically
+
+### Testing
+ 
+**API failure:** Set `VITE_OPENWEATHER_KEY` to an invalid value in `.env`, run `localStorage.clear()` in the browser console and refresh the page. An error message and a "Try again" button displays on the home screen. Restore API key when done.
+ 
+**Loading state:** Run `localStorage.clear()` in the browser console, then navigate to the home screen. The loading message appears briefly while the weather data loads.
+ 
+**No saved location:** Navigate to the home page, then run `localStorage.clear()` in the browser console and refresh the page. When the page is refreshed, the app redirects to onboarding instead of the homescreen.
 
 ---
 
-## Documentation
+## Locations
 
-Full planning documentation including the scoring algorithm, API contracts, and data workflows can be found in `docs/planning.md`.
+Farcast currently supports a preset list of cities across BC, Alberta, Ontario, and the Pacific Northwest. Users pick their location during onboarding and can change it anytime in Settings.
 
-The style guide can be found in `docs/style-guide.md`.
+---
 
---
+## Known Limitations
+
+- Location support is limited to a preset list. Search and geolocation are planned for a future release.
+- Forecast data is provided in 3-hour intervals due to the OpenWeather free tier.
+- The 5-day outlook is derived from the same 3-hour forecast data, so coverage varies depending on the time of day.
+- Because the free tier only returns future forecast slots, the "Today" entry in the 5-day forecast becomes less accurate as the day progresses. Early in the day this is not noticeable, but by afternoon the high and low temperatures may not reflect the full day, and by late evening the temperature bar may appear empty entirely.
+
+---
 
 ## Future Improvements
 
-- **Push notifications** - a daily morning alert with your comfort score and best window for the day
-- **Location search** - search for any city or trail by name instead of picking from a preset list
-- **Multiple saved locations** - save and switch between multiple locations, useful for people who ride or hike in different spots regularly
-- **Hourly forecast** - currently the app shows data in 3-hour intervals due to the free API tier, a paid plan would allow true per-hour breakdown
-- **7-day forecast** - extending the outlook from 5 days to 7 days for better weekly planning
+### v1.5
+
+- **Geolocation** to detect the user's current location automatically
+- **Location search** to find any city by name instead of picking from a preset list
+- **Day detail view** to see a full hourly breakdown for any day in the 5-day forecast
+- **Multiple saved locations** to switch between locations quickly
+
+### v2
+
+- **Activity-based comfort scoring** to score current conditions from 0 to 100 based on a selected activity (cycling, hiking, running, paddling)
+- **Best window of opportunity** to identify the optimal time window for your activity today based on forecast conditions
+- **Per-activity sensitivity tuning** to adjust how much weight is given to temperature, wind, and rain for each activity
+- **Score breakdown** to see exactly which weather factors are helping or hurting your score
+- **Activity switcher** to switch between activities on the home screen without re-entering setup
+
+*Full planning documentation for v2 including the scoring algorithm, activity weights, and data workflows can be found in `docs/planning.md`. The style guide can be found in `docs/style-guide.md`.*
+
+---
+
+## Notes
+
+Additional notes on this project can be found in `NOTES.md`.
