@@ -74,10 +74,13 @@ function getWeatherIcon(weatherCode, size = 40, isNight = false) {
 }
 
 function getOutlookBarStyle(low, high, allData) {
+  // Find the coldest and hottest temps across all days to set the scale
   const minTemp = Math.min(...allData.map(d => d.low)) - 2
   const maxTemp = Math.max(...allData.map(d => d.high)) + 2
   const range = maxTemp - minTemp
+  // How far from the left edge the bar starts
   const leftPercent = ((low - minTemp) / range) * 100
+  // How wide the bar is
   const widthPercent = ((high - low) / range) * 100
   return {
     marginLeft: `${leftPercent}%`,
@@ -89,7 +92,7 @@ function getOutlookBarStyle(low, high, allData) {
 }
 
 function formatTime(unixTimestamp, timezoneOffset, timeFormat = '12h') {
-  // Convert unix timestamp to local time using the location's timezone offset
+  // OpenWeather returns UTC timestamps. Adding the timezone offset converts to local time.
   const utcMs = unixTimestamp * 1000
   const localMs = utcMs + timezoneOffset * 1000
   const date = new Date(localMs)
@@ -245,6 +248,22 @@ function getNextChange(currentWeatherCode, forecastList, timezoneOffset, timeFor
   }
 
   return null
+}
+
+// Reusable stat block for the Today's Conditions grid
+function ConditionStat({ icon, label, value, unit, sub }) {
+  return (
+    <div className="today-condition-stat">
+      <div className="today-condition-header">
+        {icon}
+        <span className="today-condition-label">{label}</span>
+      </div>
+      <p className="today-condition-value">
+        {value} <span className="today-condition-unit">{unit}</span>
+      </p>
+      <p className="today-condition-sub">{sub}</p>
+    </div>
+  )
 }
 
 function Home({ setPage }) {
@@ -421,56 +440,48 @@ function Home({ setPage }) {
               <div className="today-conditions-card welcome-card-dark">
                 <p className="today-conditions-title">Today's conditions</p>
                 <div className="today-conditions-grid">
-                  <div className="today-condition-stat">
-                    <div className="today-condition-header">
-                      <AirIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
-                      <span className="today-condition-label">WIND</span>
-                    </div>
-                    <p className="today-condition-value">{displayWind} <span className="today-condition-unit">{displayWindUnit}</span></p>
-                    <p className="today-condition-sub">From the {getWindDirection(weather.current.wind.deg)}</p>
-                  </div>
-                  <div className="today-condition-stat">
-                    <div className="today-condition-header">
-                      <WaterDropIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
-                      <span className="today-condition-label">RAIN</span>
-                    </div>
-                    <p className="today-condition-value">{Math.round((weather.forecast[0]?.pop || 0) * 100)} <span className="today-condition-unit">%</span></p>
-                    <p className="today-condition-sub">
-                      {rainLastHour ? `${rainLastHour} mm in 1 hr` : '0 mm in 1 hr'}
-                    </p>
-                  </div>
-                  <div className="today-condition-stat">
-                    <div className="today-condition-header">
-                      <OpacityIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
-                      <span className="today-condition-label">HUMIDITY</span>
-                    </div>
-                    <p className="today-condition-value">{weather.current.main.humidity} <span className="today-condition-unit">%</span></p>
-                    <p className="today-condition-sub">{getHumidityLabel(weather.current.main.humidity)}</p>
-                  </div>
-                  <div className="today-condition-stat">
-                    <div className="today-condition-header">
-                      <CloudIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
-                      <span className="today-condition-label">CLOUD COVER</span>
-                    </div>
-                    <p className="today-condition-value">{weather.current.clouds.all} <span className="today-condition-unit">%</span></p>
-                    <p className="today-condition-sub">{getCloudLabel(weather.current.clouds.all)}</p>
-                  </div>
-                  <div className="today-condition-stat">
-                    <div className="today-condition-header">
-                      <CompressIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
-                      <span className="today-condition-label">PRESSURE</span>
-                    </div>
-                    <p className="today-condition-value">{weather.current.main.pressure} <span className="today-condition-unit">hPa</span></p>
-                    <p className="today-condition-sub">Steady</p>
-                  </div>
-                  <div className="today-condition-stat">
-                    <div className="today-condition-header">
-                      <VisibilityIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
-                      <span className="today-condition-label">VISIBILITY</span>
-                    </div>
-                    <p className="today-condition-value">{Math.round((weather.current.visibility || 10000) / 1000)} <span className="today-condition-unit">km</span></p>
-                    <p className="today-condition-sub">{getVisibilityLabel(weather.current.visibility || 10000)}</p>
-                  </div>
+                  <ConditionStat
+                    icon={<AirIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />}
+                    label="WIND"
+                    value={displayWind}
+                    unit={displayWindUnit}
+                    sub={`From the ${getWindDirection(weather.current.wind.deg)}`}
+                  />
+                  <ConditionStat
+                    icon={<WaterDropIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />}
+                    label="RAIN"
+                    value={Math.round((weather.forecast[0]?.pop || 0) * 100)}
+                    unit="%"
+                    sub={rainLastHour ? `${rainLastHour} mm in 1 hr` : '0 mm in 1 hr'}
+                  />
+                  <ConditionStat
+                    icon={<OpacityIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />}
+                    label="HUMIDITY"
+                    value={weather.current.main.humidity}
+                    unit="%"
+                    sub={getHumidityLabel(weather.current.main.humidity)}
+                  />
+                  <ConditionStat
+                    icon={<CloudIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />}
+                    label="CLOUD COVER"
+                    value={weather.current.clouds.all}
+                    unit="%"
+                    sub={getCloudLabel(weather.current.clouds.all)}
+                  />
+                  <ConditionStat
+                    icon={<CompressIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />}
+                    label="PRESSURE"
+                    value={weather.current.main.pressure}
+                    unit="hPa"
+                    sub="Steady"
+                  />
+                  <ConditionStat
+                    icon={<VisibilityIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />}
+                    label="VISIBILITY"
+                    value={Math.round((weather.current.visibility || 10000) / 1000)}
+                    unit="km"
+                    sub={getVisibilityLabel(weather.current.visibility || 10000)}
+                  />
                 </div>
                 <div className="today-conditions-sun">
                   <div className="today-conditions-sun-item">
@@ -547,56 +558,48 @@ function Home({ setPage }) {
               <div className="today-conditions-card welcome-card-dark">
                 <p className="today-conditions-title">Today's conditions</p>
                 <div className="today-conditions-grid">
-                  <div className="today-condition-stat">
-                    <div className="today-condition-header">
-                      <AirIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
-                      <span className="today-condition-label">WIND</span>
-                    </div>
-                    <p className="today-condition-value">{displayWind} <span className="today-condition-unit">{displayWindUnit}</span></p>
-                    <p className="today-condition-sub">From the {getWindDirection(weather.current.wind.deg)}</p>
-                  </div>
-                  <div className="today-condition-stat">
-                    <div className="today-condition-header">
-                      <WaterDropIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
-                      <span className="today-condition-label">RAIN</span>
-                    </div>
-                    <p className="today-condition-value">{Math.round((weather.forecast[0]?.pop || 0) * 100)} <span className="today-condition-unit">%</span></p>
-                    <p className="today-condition-sub">
-                      {rainLastHour ? `${rainLastHour} mm in 1 hr` : '0 mm in 1 hr'}
-                    </p>
-                  </div>
-                  <div className="today-condition-stat">
-                    <div className="today-condition-header">
-                      <OpacityIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
-                      <span className="today-condition-label">HUMIDITY</span>
-                    </div>
-                    <p className="today-condition-value">{weather.current.main.humidity} <span className="today-condition-unit">%</span></p>
-                    <p className="today-condition-sub">{getHumidityLabel(weather.current.main.humidity)}</p>
-                  </div>
-                  <div className="today-condition-stat">
-                    <div className="today-condition-header">
-                      <CloudIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
-                      <span className="today-condition-label">CLOUD COVER</span>
-                    </div>
-                    <p className="today-condition-value">{weather.current.clouds.all} <span className="today-condition-unit">%</span></p>
-                    <p className="today-condition-sub">{getCloudLabel(weather.current.clouds.all)}</p>
-                  </div>
-                  <div className="today-condition-stat">
-                    <div className="today-condition-header">
-                      <CompressIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
-                      <span className="today-condition-label">PRESSURE</span>
-                    </div>
-                    <p className="today-condition-value">{weather.current.main.pressure} <span className="today-condition-unit">hPa</span></p>
-                    <p className="today-condition-sub">Steady</p>
-                  </div>
-                  <div className="today-condition-stat">
-                    <div className="today-condition-header">
-                      <VisibilityIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />
-                      <span className="today-condition-label">VISIBILITY</span>
-                    </div>
-                    <p className="today-condition-value">{Math.round((weather.current.visibility || 10000) / 1000)} <span className="today-condition-unit">km</span></p>
-                    <p className="today-condition-sub">{getVisibilityLabel(weather.current.visibility || 10000)}</p>
-                  </div>
+                  <ConditionStat
+                    icon={<AirIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />}
+                    label="WIND"
+                    value={displayWind}
+                    unit={displayWindUnit}
+                    sub={`From the ${getWindDirection(weather.current.wind.deg)}`}
+                  />
+                  <ConditionStat
+                    icon={<WaterDropIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />}
+                    label="RAIN"
+                    value={Math.round((weather.forecast[0]?.pop || 0) * 100)}
+                    unit="%"
+                    sub={rainLastHour ? `${rainLastHour} mm in 1 hr` : '0 mm in 1 hr'}
+                  />
+                  <ConditionStat
+                    icon={<OpacityIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />}
+                    label="HUMIDITY"
+                    value={weather.current.main.humidity}
+                    unit="%"
+                    sub={getHumidityLabel(weather.current.main.humidity)}
+                  />
+                  <ConditionStat
+                    icon={<CloudIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />}
+                    label="CLOUD COVER"
+                    value={weather.current.clouds.all}
+                    unit="%"
+                    sub={getCloudLabel(weather.current.clouds.all)}
+                  />
+                  <ConditionStat
+                    icon={<CompressIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />}
+                    label="PRESSURE"
+                    value={weather.current.main.pressure}
+                    unit="hPa"
+                    sub="Steady"
+                  />
+                  <ConditionStat
+                    icon={<VisibilityIcon style={{ fontSize: 16, color: 'var(--text-muted)' }} />}
+                    label="VISIBILITY"
+                    value={Math.round((weather.current.visibility || 10000) / 1000)}
+                    unit="km"
+                    sub={getVisibilityLabel(weather.current.visibility || 10000)}
+                  />
                 </div>
                 <div className="today-conditions-sun">
                   <div className="today-conditions-sun-item">
